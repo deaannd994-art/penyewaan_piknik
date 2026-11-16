@@ -1,0 +1,286 @@
+/*    GLOBAL */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+}
+
+/*    HEADER */
+.header {
+    background: #2e7d32;
+    color: #ffffff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/*    WRAPPER */
+.wrapper {
+    display: flex;
+    min-height: calc(100vh - 60px);
+}
+
+/*    SIDEBAR */
+.sidebar {
+    width: 220px;
+    background: #eaf4ea;
+    padding: 20px;
+}
+
+.sidebar a {
+    display: block;
+    color: #2e7d32;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.sidebar a.active,
+.sidebar a:hover {
+    background: #2e7d32;
+    color: #ffffff;
+}
+
+/* Logout button */
+.logout {
+    background: #c9a97d;
+    color: #ffffff;
+}
+
+.logout:hover {
+    background: #b71c1c;
+}
+
+/*    CONTENT */
+.content {
+    flex: 1;
+    padding: 25px;
+    position: relative;
+    z-index: 5;
+}
+
+/*    GRID PERALATAN */
+.grid-peralatan {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 25px;
+    align-items: start;
+}
+
+/*    CARD */
+.card {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 10;
+}
+
+/*    FORM */
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-grid input,
+.form-grid textarea,
+.form-grid select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.form-grid textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-grid img {
+    border-radius: 8px;
+}
+
+/*    BUTTON */
+.btn {
+    background: #2e7d32;
+    color: #ffffff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Button kecil */
+.btn-sm {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+/* Edit */
+.btn-sm.edit {
+    background: #1976d2;
+    color: #ffffff;
+}
+
+.btn-sm.edit:hover {
+    background: #0d47a1;
+}
+
+/* Delete */
+.btn-sm.delete {
+    background: #d32f2f;
+    color: #ffffff;
+}
+
+.btn-sm.delete:hover {
+    background: #b71c1c;
+}
+
+/*    TABLE */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+}
+
+.table th {
+    background: #eaf4ea;
+    color: #2e5d2e;
+}
+
+.table img {
+    border-radius: 6px;
+}
+
+/*    BADGE / STATUS */
+.badge {
+    padding: 6px 15px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+    color: #ffffff;
+}
+
+.badge.success {
+    background: #2e7d32; /* selesai */
+}
+
+.badge.warning {
+    background: #f9a825; /* menunggu */
+    color: #000000;
+}
+
+.badge.secondary {
+    background: #6d6d6d; /* diproses */
+}
+
+.badge.info {
+    background: #0288d1; /* disetujui */
+}
+
+.badge.danger {
+    background: #c62828; /* dibatalkan */
+}
+
+.badge.secondary {
+    background: #9e9e9e;
+}
+
+/*    UPDATE FORM FIX */
+.update-form {
+    position: relative;
+    z-index: 9999;
+    pointer-events: auto;
+}
+
+.update-form * {
+    pointer-events: auto;
+}
+
+/*    FOOTER */
+.footer {
+    text-align: center;
+    padding: 12px;
+    background: #ffffff;
+    font-size: 13px;
+    color: #555;
+}
+
+/*    INTERAKSI */
+button,
+select {
+    pointer-events: auto !important;
+}
+
+.sidebar,
+.header {
+    pointer-events: auto;
+}
+
+/*    RESPONSIVE */
+@media (max-width: 992px) {
+    .grid-peralatan {
+        grid-template-columns: 1fr;
+    }
+
+    .form-section {
+        order: 1;
+    }
+
+    .table-section {
+        order: 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .wrapper {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        display: none;
+    }
+
+    .content {
+        padding: 12px;
+    }
+
+    .table {
+        font-size: 12px;
+    }
+
+    .table img {
+        width: 45px;
+    }
+
+    .btn-sm {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+}

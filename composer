@@ -1,0 +1,9 @@
+#!/bin/sh
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -W 2>/dev/null || cd "$(dirname "$0")" && pwd)"
+if command -v php >/dev/null 2>&1; then
+    php "$SCRIPT_DIR/composer.phar" "$@"
+elif [ -f "/c/xampp/php/php.exe" ]; then
+    /c/xampp/php/php.exe "$SCRIPT_DIR/composer.phar" "$@"
+else
+    "C:\\xampp\\php\\php.exe" "$SCRIPT_DIR/composer.phar" "$@"
+fi

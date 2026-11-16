@@ -1,0 +1,28 @@
+{
+    "name": "tulip/penyewaan-piknik",
+    "description": "Sistem Informasi Penyewaan Peralatan Piknik Tulip Project dengan Pengerasan OWASP Top 10 & Helmet Security Headers",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dea Ananda",
+            "email": "dea@piknik.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "vlucas/phpdotenv": "^5.6",
+        "paragonie/random_compat": "^9.99.100"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tulip\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {}
+    }
+}

@@ -1,0 +1,38 @@
+# ========================================================
+# GIT IGNORE - Sistem Penyewaan Peralatan Piknik
+# OWASP A05: Security Misconfiguration Prevention
+# ========================================================
+
+# Environment & Secret files (OWASP A05: Prevention of Secret Leakage)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Dependencies & Package Managers
+vendor/
+composer.phar
+
+# Server & Error Logs
+*.log
+error_log
+php_errors.log
+cookie*.txt
+
+# Operating System Files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE & Editor Directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+
+# User & System Uploads (Keep directories with .gitkeep)
+uploads/bukti/*
+!uploads/bukti/.gitkeep
+uploads/peralatan/*
+!uploads/peralatan/.gitkeep
