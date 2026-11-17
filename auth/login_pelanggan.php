@@ -9,10 +9,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $captcha  = trim($_POST['captcha_code'] ?? '');
 
     if (empty($email) || empty($password)) {
         http_response_code(400);
         $error = "Email dan password wajib diisi!";
+    } elseif (!validate_captcha($captcha, $pdo, 'auth/login_pelanggan.php')) {
+        http_response_code(400);
+        $error = "Kode verifikasi CAPTCHA salah atau telah kedaluwarsa. Silakan coba lagi.";
     } elseif (is_login_rate_limited($pdo, $email)) {
         http_response_code(429);
         $error = "Terlalu banyak percobaan login gagal. Percobaan login dibatasi selama 15 menit.";
@@ -97,6 +101,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         👁️‍🗨️
                     </button>
                 </div>
+            </div>
+
+            <!-- KOTAK VERIFIKASI IMAGE CAPTCHA -->
+            <div class="form-group">
+                <label class="form-label" for="captchaCode">Verifikasi Keamanan (Bukan Robot)</label>
+                <div class="captcha-box">
+                    <img src="<?= app_path('public/captcha.php') ?>" alt="Security CAPTCHA" id="captchaImg" class="captcha-img">
+                    <button type="button" class="btn btn-outline btn-sm btn-refresh-captcha" data-target="captchaImg" title="Perbarui Kode">
+                        🔄 Refresh
+                    </button>
+                </div>
+                <input type="text" id="captchaCode" name="captcha_code" class="form-control mt-2" 
+                       placeholder="Ketik 6 karakter di atas..." maxlength="6" autocomplete="off" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full btn-lg mt-3">

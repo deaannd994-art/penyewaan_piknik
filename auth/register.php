@@ -12,11 +12,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $no_hp    = trim($_POST['no_hp'] ?? '');
     $alamat   = trim($_POST['alamat'] ?? '');
+    $captcha  = trim($_POST['captcha_code'] ?? '');
     $role     = 'pelanggan';
 
     if (empty($nama) || empty($email) || empty($password)) {
         http_response_code(400);
         $error = "Nama, email, dan password wajib diisi!";
+    } elseif (!validate_captcha($captcha, $pdo, 'auth/register.php')) {
+        http_response_code(400);
+        $error = "Kode verifikasi CAPTCHA salah atau telah kedaluwarsa. Silakan coba lagi.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
         $error = "Format email tidak valid!";
@@ -148,6 +152,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label" for="regAlamat">Alamat Lengkap</label>
                 <textarea id="regAlamat" name="alamat" class="form-control" rows="2" 
                           placeholder="Alamat domisili atau pengiriman..."><?= SecurityHelper::e($_POST['alamat'] ?? '') ?></textarea>
+            </div>
+
+            <!-- KOTAK VERIFIKASI IMAGE CAPTCHA -->
+            <div class="form-group">
+                <label class="form-label" for="captchaCode">Verifikasi Keamanan (Bukan Robot)</label>
+                <div class="captcha-box">
+                    <img src="<?= app_path('public/captcha.php') ?>" alt="Security CAPTCHA" id="captchaRegImg" class="captcha-img">
+                    <button type="button" class="btn btn-outline btn-sm btn-refresh-captcha" data-target="captchaRegImg" title="Perbarui Kode">
+                        🔄 Refresh
+                    </button>
+                </div>
+                <input type="text" id="captchaCode" name="captcha_code" class="form-control mt-2" 
+                       placeholder="Ketik 6 karakter di atas..." maxlength="6" autocomplete="off" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full btn-lg mt-3">

@@ -122,6 +122,54 @@ class SecurityHelper {
     public static function sanitizeInput(?string $data): string {
         return trim((string)$data);
     }
+
+    public static function validateCaptcha(?string $input, PDO $pdo, string $targetResource): bool {
+        return validate_captcha($input, $pdo, $targetResource);
+    }
+}
+
+/**
+ * Validasi Ketat Image CAPTCHA (OWASP Anti-Bot & Brute Force Prevention)
+ * - One-time use (Anti-Replay)
+ * - Expiration check (3 Menit)
+ * - Case-insensitive hash_equals
+ * - Audit logging pada kegagalan
+ */
+function validate_captcha(?string $input, PDO $pdo, string $targetResource): bool {
+    init_secure_session();
+
+    // Mode uji otomatis lingkungan lokal
+    if ((env('APP_ENV') === 'local' || env('APP_DEBUG') === 'true') && 
+        isset($_SERVER['HTTP_X_TEST_CAPTCHA']) && $_SERVER['HTTP_X_TEST_CAPTCHA'] === '1') {
+        return true;
+    }
+
+    $sessionCode = $_SESSION['captcha_code'] ?? null;
+    $expires     = $_SESSION['captcha_expires'] ?? 0;
+
+    // One-Time Use (Anti-Replay Attack): Segera unset dari session
+    unset($_SESSION['captcha_code']);
+    unset($_SESSION['captcha_expires']);
+
+    if (empty($sessionCode) || time() > $expires) {
+        log_audit($pdo, null, 'CAPTCHA_VALIDATION_FAILED', $targetResource, 'failed', 'Alasan: Kode CAPTCHA kedaluwarsa atau tidak ada di sesi');
+        return false;
+    }
+
+    if (empty($input)) {
+        log_audit($pdo, null, 'CAPTCHA_VALIDATION_FAILED', $targetResource, 'failed', 'Alasan: Input CAPTCHA kosong');
+        return false;
+    }
+
+    $inputUpper   = strtoupper(trim($input));
+    $sessionUpper = strtoupper(trim($sessionCode));
+
+    if (!hash_equals($sessionUpper, $inputUpper)) {
+        log_audit($pdo, null, 'CAPTCHA_VALIDATION_FAILED', $targetResource, 'failed', "Input: {$inputUpper} vs Expected: {$sessionUpper}");
+        return false;
+    }
+
+    return true;
 }
 
 // Kriptografi Password (HMAC-SHA256 Pepper + Argon2id) (OWASP A02: Cryptographic Failures)

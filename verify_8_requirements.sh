@@ -57,7 +57,7 @@ test_1_sqli() {
     echo -e "Payload   : ${YELLOW}email=${payload}${RESET} & password=arbitrary"
     
     local status
-    status=$(curl -s -o /dev/null -w "%{http_code}" -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
+    status=$(curl -s -o /dev/null -w "%{http_code}" -H "X-Test-Captcha: 1" -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
         -X POST "$url" \
         --data-urlencode "email=${payload}" \
         --data-urlencode "password=arbitrary" \
@@ -90,7 +90,7 @@ test_2_xss() {
     echo -e "Payload   : ${YELLOW}${payload}${RESET} pada input nama & catatan transaksi"
     
     local response
-    response=$(curl -s -c "$xss_jar" -b "$xss_jar" \
+    response=$(curl -s -H "X-Test-Captcha: 1" -c "$xss_jar" -b "$xss_jar" \
         -X POST "$reg_url" \
         --data-urlencode "nama=${payload}" \
         --data-urlencode "email=test_xss_check@piknik.com" \
@@ -125,7 +125,7 @@ test_3_rbac_idor() {
     token=$(get_csrf_token "$login_url" "$auth_jar")
     
     # 1. Login sebagai pelanggan
-    curl -s -o /dev/null -c "$auth_jar" -b "$auth_jar" \
+    curl -s -o /dev/null -H "X-Test-Captcha: 1" -c "$auth_jar" -b "$auth_jar" \
         -X POST "$login_url" \
         --data-urlencode "email=deanda@gmail.com" \
         --data-urlencode "password=Password@123" \
@@ -179,7 +179,7 @@ test_4_brute_force() {
         local token
         token=$(get_csrf_token "$login_url" "$bf_jar")
         local code
-        code=$(curl -s -o /dev/null -w "%{http_code}" -c "$bf_jar" -b "$bf_jar" \
+        code=$(curl -s -o /dev/null -w "%{http_code}" -H "X-Test-Captcha: 1" -c "$bf_jar" -b "$bf_jar" \
             -X POST "$login_url" \
             --data-urlencode "email=${target_email}" \
             --data-urlencode "password=SalahTotalPassword${i}" \
@@ -216,7 +216,7 @@ test_5_weak_password() {
     echo -e "Uji Password : ${YELLOW}${weak_pass}${RESET} (Tidak memenuhi syarat min 8 char, uppercase, number, symbol)"
     
     local status
-    status=$(curl -s -o /dev/null -w "%{http_code}" -c "$pw_jar" -b "$pw_jar" \
+    status=$(curl -s -o /dev/null -w "%{http_code}" -H "X-Test-Captcha: 1" -c "$pw_jar" -b "$pw_jar" \
         -X POST "$reg_url" \
         --data-urlencode "nama=User Lemah" \
         --data-urlencode "email=user_weak_$(date +%s)@piknik.com" \

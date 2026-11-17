@@ -188,6 +188,9 @@ $logs = $stmtLogs->fetchAll();
                             } elseif (str_contains($actionUpper, 'UNAUTHORIZED')) {
                                 $isAttack = true;
                                 $attackBadge = '<span class="badge badge-unauthorized">Unauthorized Access</span>';
+                            } elseif (str_contains($actionUpper, 'CAPTCHA')) {
+                                $isAttack = true;
+                                $attackBadge = '<span class="badge badge-danger">Bot / Invalid CAPTCHA</span>';
                             }
                         ?>
                         <tr data-status="<?= SecurityHelper::e($log['status']) ?>"

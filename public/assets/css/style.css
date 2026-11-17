@@ -1753,3 +1753,28 @@ textarea.form-control {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   CAPTCHA VERIFICATION COMPONENT
+   ========================================================================== */
+.captcha-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.captcha-img {
+    height: 46px;
+    width: 160px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background-color: #FFFFFF;
+    box-shadow: var(--shadow-xs);
+}
+
+.btn-refresh-captcha {
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+}

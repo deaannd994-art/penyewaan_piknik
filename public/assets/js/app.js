@@ -638,3 +638,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+/* ==========================================================================
+   15. CAPTCHA REFRESH HANDLER (Zero Inline Code)
+   ========================================================================== */
+function initCaptchaRefresh() {
+    const refreshBtns = document.querySelectorAll('.btn-refresh-captcha');
+    refreshBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = btn.getAttribute('data-target') || 'captchaImg';
+            const img = document.getElementById(targetId);
+            if (img) {
+                const currentSrc = img.src.split('?')[0];
+                img.src = currentSrc + '?t=' + new Date().getTime();
+            }
+        });
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCaptchaRefresh);
+} else {
+    initCaptchaRefresh();
+}

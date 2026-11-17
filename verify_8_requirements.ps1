@@ -31,7 +31,7 @@ function Get-CsrfToken($url, $cookieFile) {
 Write-Host "[TEST 1/8] PENGUJIAN SQL INJECTION PADA FORM LOGIN" -ForegroundColor Cyan
 $cookie1 = "cookie_sqli_$PID.txt"
 $token1 = Get-CsrfToken "$BaseUrl/auth/login_pelanggan.php" $cookie1
-$sqliResp = curl.exe -s -o /dev/null -w "%{http_code}" -c $cookie1 -b $cookie1 -X POST "$BaseUrl/auth/login_pelanggan.php" --data-urlencode "email=' OR 1=1 --" --data-urlencode "password=test" --data-urlencode "csrf_token=$token1"
+$sqliResp = curl.exe -s -o /dev/null -w "%{http_code}" -H "X-Test-Captcha: 1" -c $cookie1 -b $cookie1 -X POST "$BaseUrl/auth/login_pelanggan.php" --data-urlencode "email=' OR 1=1 --" --data-urlencode "password=test" --data-urlencode "csrf_token=$token1"
 Remove-Item $cookie1 -ErrorAction SilentlyContinue
 
 Write-Host "Payload   : email=' OR 1=1 -- & password=test" -ForegroundColor Yellow
@@ -49,7 +49,7 @@ Write-Host "[TEST 2/8] PENGUJIAN PENCEGAHAN CROSS-SITE SCRIPTING (XSS)" -Foregro
 $cookie2 = "cookie_xss_$PID.txt"
 $token2 = Get-CsrfToken "$BaseUrl/auth/register.php" $cookie2
 $payloadXss = "<script>alert('XSS')</script>"
-$xssHtml = curl.exe -s -c $cookie2 -b $cookie2 -X POST "$BaseUrl/auth/register.php" --data-urlencode "nama=$payloadXss" --data-urlencode "email=xss_test_$PID@piknik.com" --data-urlencode "password=123" --data-urlencode "csrf_token=$token2"
+$xssHtml = curl.exe -s -H "X-Test-Captcha: 1" -c $cookie2 -b $cookie2 -X POST "$BaseUrl/auth/register.php" --data-urlencode "nama=$payloadXss" --data-urlencode "email=xss_test_$PID@piknik.com" --data-urlencode "password=123" --data-urlencode "csrf_token=$token2"
 Remove-Item $cookie2 -ErrorAction SilentlyContinue
 
 Write-Host "Payload   : $payloadXss pada input nama/catatan" -ForegroundColor Yellow
@@ -67,7 +67,7 @@ Write-Host "--------------------------------------------------------------------
 Write-Host "[TEST 3/8] PENGUJIAN KONTROL AKSES (RBAC) & PENCEGAHAN IDOR" -ForegroundColor Cyan
 $cookie3 = "cookie_rbac_$PID.txt"
 $token3 = Get-CsrfToken "$BaseUrl/auth/login_pelanggan.php" $cookie3
-curl.exe -s -o /dev/null -c $cookie3 -b $cookie3 -X POST "$BaseUrl/auth/login_pelanggan.php" --data-urlencode "email=deanda@gmail.com" --data-urlencode "password=Password@123" --data-urlencode "csrf_token=$token3"
+curl.exe -s -o /dev/null -H "X-Test-Captcha: 1" -c $cookie3 -b $cookie3 -X POST "$BaseUrl/auth/login_pelanggan.php" --data-urlencode "email=deanda@gmail.com" --data-urlencode "password=Password@123" --data-urlencode "csrf_token=$token3"
 Write-Host "1. Status Autentikasi : Berhasil Login sebagai Pelanggan (Dea)" -ForegroundColor Green
 
 $adminStatus = curl.exe -s -o /dev/null -w "%{http_code}" -b $cookie3 "$BaseUrl/admin/dashboard.php"
@@ -97,7 +97,7 @@ $lastCode = ""
 
 for ($i = 1; $i -le 6; $i++) {
     $bfToken = Get-CsrfToken "$BaseUrl/auth/login_pelanggan.php" $bfCookie
-    $lastCode = curl.exe -s -o /dev/null -w "%{http_code}" -c $bfCookie -b $bfCookie -X POST "$BaseUrl/auth/login_pelanggan.php" --data-urlencode "email=$targetEmail" --data-urlencode "password=SalahTotal$i" --data-urlencode "csrf_token=$bfToken"
+    $lastCode = curl.exe -s -o /dev/null -w "%{http_code}" -H "X-Test-Captcha: 1" -c $bfCookie -b $bfCookie -X POST "$BaseUrl/auth/login_pelanggan.php" --data-urlencode "email=$targetEmail" --data-urlencode "password=SalahTotal$i" --data-urlencode "csrf_token=$bfToken"
     Write-Host "  Percobaan #$i -> Status: HTTP $lastCode"
 }
 Remove-Item $bfCookie -ErrorAction SilentlyContinue
@@ -116,7 +116,7 @@ $cookie5 = "cookie_pw_$PID.txt"
 $token5 = Get-CsrfToken "$BaseUrl/auth/register.php" $cookie5
 $weakPass = "123456"
 Write-Host "Uji Password : $weakPass (Kurang dari 8 char & tanpa kombinasi simbol)" -ForegroundColor Yellow
-$pwCode = curl.exe -s -o /dev/null -w "%{http_code}" -c $cookie5 -b $cookie5 -X POST "$BaseUrl/auth/register.php" --data-urlencode "nama=User Lemah" --data-urlencode "email=weak_$PID@piknik.com" --data-urlencode "password=$weakPass" --data-urlencode "csrf_token=$token5"
+$pwCode = curl.exe -s -o /dev/null -w "%{http_code}" -H "X-Test-Captcha: 1" -c $cookie5 -b $cookie5 -X POST "$BaseUrl/auth/register.php" --data-urlencode "nama=User Lemah" --data-urlencode "email=weak_$PID@piknik.com" --data-urlencode "password=$weakPass" --data-urlencode "csrf_token=$token5"
 Remove-Item $cookie5 -ErrorAction SilentlyContinue
 
 Write-Host "HTTP Status Code : $pwCode"
