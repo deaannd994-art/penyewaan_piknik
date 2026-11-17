@@ -16,30 +16,48 @@ apply_security_headers();
 
 // Konfigurasi Session Hardening (OWASP A07: Identification and Authentication Failures)
 function init_secure_session(): void {
-    if (session_status() === PHP_SESSION_NONE) {
-        $lifetime = (int) env('SESSION_LIFETIME', 7200);
-        $isHttps  = (bool) env('APP_HTTPS', false) || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+    $lifetime = (int) env('SESSION_LIFETIME', 3600);
+    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+             || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+             || (bool) env('APP_HTTPS', false);
 
+    if (session_status() === PHP_SESSION_NONE) {
         $cookieParams = [
             'lifetime' => $lifetime,
             'path'     => '/',
             'domain'   => '',
-            'secure'   => $isHttps,
+            'secure'   => $isSecure,
             'httponly' => true,
-            'samesite' => 'Strict'
+            'samesite' => 'Lax'
         ];
         session_set_cookie_params($cookieParams);
 
         ini_set('session.use_strict_mode', '1');
         ini_set('session.cookie_httponly', '1');
-        ini_set('session.cookie_samesite', 'Strict');
-        if ($isHttps) {
-            ini_set('session.cookie_secure', '1');
-        }
+        ini_set('session.cookie_samesite', 'Lax');
+        ini_set('session.cookie_secure', $isSecure ? '1' : '0');
         ini_set('session.gc_maxlifetime', (string)$lifetime);
 
         session_start();
     }
+
+    // Pengecekan Idle Timeout (Maksimal 3600 Detik / 1 Jam)
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $lifetime)) {
+        $_SESSION = [];
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+        @session_destroy();
+        session_start();
+    }
+
+    // Selalu perbarui waktu aktivitas terakhir saat halaman aktif diakses
+    $_SESSION['last_activity'] = time();
 }
 
 // Generate RFC 4122 Compliant UUID v4 (CHAR(36))
@@ -341,12 +359,16 @@ function require_auth(array $allowed_roles = [], ?string $redirect_url = null): 
 
     $redirect_url = $redirect_url ?? app_path('auth/login_pelanggan.php');
 
-    if (empty($_SESSION['login']) || empty($_SESSION['id_user'])) {
+    // Jika belum login, id_user kosong, atau role kosong (sesi terputus/kedaluwarsa), arahkan ke login
+    if (empty($_SESSION['login']) || empty($_SESSION['id_user']) || empty($_SESSION['role'])) {
         header("Location: " . $redirect_url);
         exit;
     }
 
-    if (!empty($allowed_roles) && !in_array($_SESSION['role'] ?? '', $allowed_roles, true)) {
+    $currentRole = (string) $_SESSION['role'];
+
+    // Verifikasi otorisasi role
+    if (!empty($allowed_roles) && !in_array($currentRole, $allowed_roles, true)) {
         if ($pdo instanceof PDO) {
             log_audit(
                 $pdo,
@@ -354,12 +376,15 @@ function require_auth(array $allowed_roles = [], ?string $redirect_url = null): 
                 'UNAUTHORIZED_ACCESS_ATTEMPT',
                 $_SERVER['SCRIPT_NAME'] ?? 'system',
                 'failed',
-                "Current role: " . ($_SESSION['role'] ?? 'none') . ", Required: " . implode(',', $allowed_roles)
+                "Current role: {$currentRole}, Required: " . implode(',', $allowed_roles)
             );
         }
         http_response_code(403);
         die("403 Forbidden: Anda tidak memiliki hak akses (role) ke halaman ini.");
     }
+
+    // Perbarui waktu aktivitas pengguna
+    $_SESSION['last_activity'] = time();
 }
 
 // Alias middleware requireRole untuk sintaks yang lebih ekspresif
