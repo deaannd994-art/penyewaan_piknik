@@ -11,8 +11,7 @@ if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     $csrf = $_GET['csrf'] ?? '';
 
-    if (verify_csrf_token($csrf) && is_valid_uuid($id)) {
-        // detail_transaksi memiliki ON DELETE CASCADE, namun kita eksekusi aman via PDO
+    if (SecurityHelper::verifyCsrf($csrf) && is_valid_uuid($id)) {
         $stmt = $pdo->prepare("DELETE FROM transaksi WHERE id_transaksi = :id");
         $stmt->execute(['id' => $id]);
 
@@ -26,7 +25,7 @@ if (isset($_GET['hapus'])) {
    SIMPAN / UPDATE
 ======================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($_POST['update']))) {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $id_user         = $_POST['id_user'] ?? '';
     $id_peralatan    = $_POST['id_peralatan'] ?? '';
@@ -43,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($
     if (!is_valid_uuid($id_user) || !is_valid_uuid($id_peralatan) || $jumlah <= 0 || empty($tanggal_sewa) || empty($tanggal_kembali)) {
         $error = "Data transaksi tidak valid!";
     } else {
-        // Ambil harga sewa peralatan
         $stmtHarga = $pdo->prepare("SELECT harga_sewa FROM peralatan WHERE id_peralatan = :id LIMIT 1");
         $stmtHarga->execute(['id' => $id_peralatan]);
         $rowHarga = $stmtHarga->fetch();
@@ -99,11 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($
                 }
             }
 
-            /* UPDATE */
+            /* UPDATE DATA */
             if (isset($_POST['update'])) {
                 $id_transaksi = $_POST['id_transaksi'] ?? '';
+
                 if (!is_valid_uuid($id_transaksi)) {
-                    $error = "ID Transaksi tidak valid!";
+                    $error = "ID transaksi tidak valid!";
                 } else {
                     $pdo->beginTransaction();
                     try {
@@ -201,187 +200,219 @@ $data = $stmtData->fetchAll();
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Admin | Data Transaksi</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css">
-    <style>
-        .img-thumb {
-            width:60px;
-            height:60px;
-            object-fit:cover;
-            border-radius:6px;
-            border:1px solid #ddd;
-        }
-    </style>
+    <title>Manajemen Transaksi - Admin Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Admin | Penyewaan Peralatan Piknik</div>
-    <a href="../../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <div class="sidebar">
-        <a href="../dashboard.php">🏠 Dashboard</a>
-        <a href="../peralatan/index.php">🧺 Peralatan</a>
-        <a href="index.php" class="active">💳 Transaksi</a>
-        <a href="../users/index.php">👤 Users</a>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Admin Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">🛡️ <?= SecurityHelper::e($_SESSION['nama'] ?? 'Admin') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
+        </div>
     </div>
+</header>
 
-    <div class="content">
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="../dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="../peralatan/index.php" class="sidebar-nav-item">
+            <span>🧺</span> Peralatan
+        </a>
+        <a href="index.php" class="sidebar-nav-item active">
+            <span>💳</span> Transaksi
+        </a>
+        <a href="../users/index.php" class="sidebar-nav-item">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan & Audit</div>
+        <a href="../audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="dashboard-main">
+        <div class="page-header">
+            <h1 class="page-title">💳 Manajemen Transaksi Penyewaan</h1>
+            <p class="page-subtitle">Kelola pemesanan, perbarui status pesanan, dan input transaksi manual.</p>
+        </div>
 
         <?php if ($error): ?>
-            <div style="background:#fee; color:#c00; padding:10px 15px; border-radius:6px; margin-bottom:15px;">
-                <?= e($error) ?>
+            <div class="alert alert-danger mb-3">
+                <span>⚠️</span>
+                <div><?= SecurityHelper::e($error) ?></div>
             </div>
         <?php endif; ?>
 
-        <div class="card">
-            <h2><?= $edit ? 'Edit Transaksi' : 'Tambah Transaksi' ?></h2>
+        <!-- FORM TRANSAKSI -->
+        <div class="checkout-card mb-4">
+            <h2 class="checkout-card-title">
+                <span>📝</span> <?= $edit ? 'Edit Transaksi Penyewaan' : 'Tambah Transaksi Manual Baru' ?>
+            </h2>
 
-            <form method="post" class="form-grid" id="formTransaksi">
-                <?= csrf_field() ?>
+            <form method="POST" id="formTransaksi">
+                <?= SecurityHelper::csrfField() ?>
 
                 <?php if ($edit): ?>
-                    <input type="hidden" name="id_transaksi" value="<?= e($edit['id_transaksi']) ?>">
+                    <input type="hidden" name="id_transaksi" value="<?= SecurityHelper::e($edit['id_transaksi']) ?>">
                 <?php endif; ?>
 
-                <select name="id_user" required>
-                    <option value="">-- Pilih Pelanggan --</option>
-                    <?php foreach ($users as $u): ?>
-                        <option value="<?= e($u['id_user']) ?>"
-                            <?= ($edit['id_user'] ?? '') === $u['id_user'] ? 'selected' : '' ?>>
-                            <?= e($u['nama']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <div class="filter-row mb-3">
+                    <div class="form-group flex-1">
+                        <label class="form-label">Pelanggan</label>
+                        <select name="id_user" class="form-control" required>
+                            <option value="">-- Pilih Pelanggan --</option>
+                            <?php foreach ($users as $u): ?>
+                                <option value="<?= SecurityHelper::e($u['id_user']) ?>"
+                                    <?= ($edit['id_user'] ?? '') === $u['id_user'] ? 'selected' : '' ?>>
+                                    <?= SecurityHelper::e($u['nama']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-                <select name="id_peralatan" id="id_peralatan" required>
-                    <option value="">-- Pilih Peralatan --</option>
-                    <?php foreach ($peralatan as $p): ?>
-                        <option value="<?= e($p['id_peralatan']) ?>"
-                            data-harga="<?= (int)$p['harga_sewa'] ?>"
-                            <?= ($edit['id_peralatan'] ?? '') === $p['id_peralatan'] ? 'selected' : '' ?>>
-                            <?= e($p['nama_peralatan']) ?> (Rp <?= number_format($p['harga_sewa'], 0, ',', '.') ?>/hari)
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Peralatan</label>
+                        <select name="id_peralatan" id="id_peralatan" class="form-control" required>
+                            <option value="">-- Pilih Peralatan --</option>
+                            <?php foreach ($peralatan as $p): ?>
+                                <option value="<?= SecurityHelper::e($p['id_peralatan']) ?>"
+                                    data-harga="<?= (int)$p['harga_sewa'] ?>"
+                                    <?= ($edit['id_peralatan'] ?? '') === $p['id_peralatan'] ? 'selected' : '' ?>>
+                                    <?= SecurityHelper::e($p['nama_peralatan']) ?> (<?= SecurityHelper::rupiah($p['harga_sewa']) ?>/hari)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-                <input type="number" id="jumlah" name="jumlah" placeholder="Jumlah" min="1"
-                       value="<?= e((string)($edit['jumlah'] ?? 1)) ?>" required>
+                    <div class="form-group" style="min-width: 120px;">
+                        <label class="form-label">Jumlah</label>
+                        <input type="number" id="jumlah" name="jumlah" class="form-control" min="1"
+                               value="<?= SecurityHelper::e((string)($edit['jumlah'] ?? 1)) ?>" required>
+                    </div>
+                </div>
 
-                <input type="date" id="tanggal_sewa" name="tanggal_sewa"
-                       value="<?= e($edit['tanggal_sewa'] ?? '') ?>" required>
+                <div class="filter-row mb-3">
+                    <div class="form-group flex-1">
+                        <label class="form-label">Tanggal Sewa</label>
+                        <input type="date" id="tanggal_sewa" name="tanggal_sewa" class="form-control"
+                               value="<?= SecurityHelper::e($edit['tanggal_sewa'] ?? '') ?>" required>
+                    </div>
 
-                <input type="date" id="tanggal_kembali" name="tanggal_kembali"
-                       value="<?= e($edit['tanggal_kembali'] ?? '') ?>" required>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Tanggal Kembali</label>
+                        <input type="date" id="tanggal_kembali" name="tanggal_kembali" class="form-control"
+                               value="<?= SecurityHelper::e($edit['tanggal_kembali'] ?? '') ?>" required>
+                    </div>
 
-                <input type="text" id="subtotal" placeholder="Subtotal" readonly>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Subtotal Terhitung</label>
+                        <input type="text" id="subtotal" class="form-control" placeholder="Rp 0" readonly>
+                    </div>
 
-                <select name="status">
-                    <?php foreach (['menunggu','diproses','disetujui','selesai','dibatalkan'] as $s): ?>
-                        <option value="<?= $s ?>" <?= ($edit['status'] ?? '') === $s ? 'selected' : '' ?>>
-                            <?= ucfirst($s) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Status Pesanan</label>
+                        <select name="status" class="form-control">
+                            <?php foreach (['menunggu','diproses','disetujui','selesai','dibatalkan'] as $s): ?>
+                                <option value="<?= $s ?>" <?= ($edit['status'] ?? '') === $s ? 'selected' : '' ?>>
+                                    <?= ucfirst($s) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
 
-                <button name="<?= $edit ? 'update' : 'simpan' ?>" class="btn">
-                    <?= $edit ? 'Update' : 'Simpan' ?>
-                </button>
-
-                <button type="button" class="btn-sm" onclick="resetForm()">Batal</button>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="<?= $edit ? 'update' : 'simpan' ?>" class="btn btn-primary">
+                        <?= $edit ? 'Simpan Pembaruan' : 'Simpan Transaksi' ?>
+                    </button>
+                    <button type="button" id="btnResetTransaksi" class="btn btn-outline">
+                        Batal
+                    </button>
+                </div>
             </form>
-            <hr>
-
-            <h2>Data Transaksi</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>User</th>
-                        <th>Peralatan</th>
-                        <th>Gambar</th>
-                        <th>Harga/Hari</th>
-                        <th>Jumlah</th>
-                        <th>Subtotal</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php $no = 1; foreach ($data as $row):
-                    $badge = match($row['status']) {
-                        'menunggu'   => 'warning',
-                        'diproses'   => 'secondary',
-                        'disetujui'  => 'info',
-                        'selesai'    => 'success',
-                        'dibatalkan' => 'danger',
-                        default      => 'secondary'
-                    };
-                    $gambar = $row['gambar']
-                        ? "../../uploads/peralatan/" . $row['gambar']
-                        : "../../assets/img/no-image.png";
-                ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td><?= e($row['nama']) ?></td>
-                        <td><?= e($row['nama_peralatan']) ?></td>
-                        <td align="center">
-                            <img src="<?= e($gambar) ?>" class="img-thumb">
-                        </td>
-                        <td>Rp <?= number_format($row['harga_sewa'], 0, ',', '.') ?></td>
-                        <td><?= e((string)$row['jumlah']) ?></td>
-                        <td>Rp <?= number_format($row['subtotal'], 0, ',', '.') ?></td>
-                        <td><span class="badge <?= $badge ?>"><?= ucfirst(e($row['status'])) ?></span></td>
-                        <td>
-                            <a href="detail.php?id=<?= urlencode($row['id_transaksi']) ?>" class="btn-sm logout">Detail</a>
-                            <a href="?edit=<?= urlencode($row['id_transaksi']) ?>" class="btn-sm edit">Edit</a>
-                            <a href="?hapus=<?= urlencode($row['id_transaksi']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>"
-                               class="btn-sm delete"
-                               onclick="return confirm('Hapus transaksi?')">Hapus</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
         </div>
-    </div>
+
+        <!-- TABEL DATA TRANSAKSI -->
+        <div class="checkout-card">
+            <h2 class="checkout-card-title">
+                <span>📑</span> Daftar Semua Transaksi
+            </h2>
+
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Pelanggan</th>
+                            <th>Peralatan</th>
+                            <th>Gambar</th>
+                            <th>Harga/Hari</th>
+                            <th>Jumlah</th>
+                            <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $no = 1; 
+                        foreach ($data as $row):
+                            $st = strtolower($row['status']);
+                            $bClass = 'badge-warning';
+                            if ($st === 'selesai' || $st === 'disetujui') $bClass = 'badge-success';
+                            if ($st === 'dibatalkan') $bClass = 'badge-danger';
+                            
+                            $gambar = $row['gambar']
+                                ? app_path("uploads/peralatan/" . SecurityHelper::e($row['gambar']))
+                                : app_path("assets/img/no-image.png");
+                        ?>
+                        <tr>
+                            <td class="text-muted"><?= $no++ ?></td>
+                            <td><strong><?= SecurityHelper::e($row['nama']) ?></strong></td>
+                            <td><?= SecurityHelper::e($row['nama_peralatan']) ?></td>
+                            <td class="text-center">
+                                <img src="<?= $gambar ?>" alt="Item" class="img-product-table">
+                            </td>
+                            <td><?= SecurityHelper::rupiah($row['harga_sewa']) ?></td>
+                            <td class="text-bold"><?= (int)$row['jumlah'] ?></td>
+                            <td class="text-bold text-primary"><?= SecurityHelper::rupiah($row['subtotal']) ?></td>
+                            <td>
+                                <span class="badge <?= $bClass ?>"><?= strtoupper(SecurityHelper::e($row['status'])) ?></span>
+                            </td>
+                            <td class="cell-nowrap">
+                                <a href="detail.php?id=<?= urlencode($row['id_transaksi']) ?>" class="btn btn-outline btn-sm">Detail</a>
+                                <a href="?edit=<?= urlencode($row['id_transaksi']) ?>" class="btn btn-sm btn-outline">Edit</a>
+                                <a href="?hapus=<?= urlencode($row['id_transaksi']) ?>&csrf=<?= urlencode(SecurityHelper::csrfToken()) ?>"
+                                   class="btn btn-sm btn-outline-danger"
+                                   data-confirm="Hapus data transaksi ini secara permanen?">Hapus</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<div class="footer">
-    © <?= date('Y') ?> Admin | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
-<script>
-function hitungSubtotal() {
-    const p = document.getElementById('id_peralatan');
-    const j = document.getElementById('jumlah').value;
-    const s = document.getElementById('tanggal_sewa').value;
-    const k = document.getElementById('tanggal_kembali').value;
-
-    if (!p.value || !s || !k) return;
-
-    const harga = p.options[p.selectedIndex].dataset.harga || 0;
-    const hari  = Math.max(1, Math.floor((new Date(k) - new Date(s)) / 86400000) + 1);
-    document.getElementById('subtotal').value = (harga * j * hari).toLocaleString('id-ID');
-}
-
-['id_peralatan','jumlah','tanggal_sewa','tanggal_kembali'].forEach(id => {
-    document.getElementById(id).addEventListener('change', hitungSubtotal);
-});
-
-hitungSubtotal();
-
-function resetForm() {
-    const form = document.getElementById('formTransaksi');
-    form.reset();
-    if (window.location.search.includes('edit=')) {
-        window.location.href = 'index.php';
-    }
-}
-</script>
-
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

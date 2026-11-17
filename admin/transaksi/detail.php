@@ -11,7 +11,7 @@ if (!is_valid_uuid($id)) {
    UPDATE STATUS
 ======================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['status'])) {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $status = $_POST['status'];
     $status_valid = ['menunggu', 'disetujui', 'diproses', 'selesai', 'dibatalkan'];
@@ -36,7 +36,8 @@ $stmtTx = $pdo->prepare("
     SELECT 
         t.*,
         u.nama,
-        u.email
+        u.email,
+        u.no_hp
     FROM transaksi t
     JOIN users u ON t.id_user = u.id_user
     WHERE t.id_transaksi = :id
@@ -66,127 +67,190 @@ $stmtDetail = $pdo->prepare("
 $stmtDetail->execute(['id' => $id]);
 $details = $stmtDetail->fetchAll();
 
-/* BADGE STATUS */
-$badge = match ($transaksi['status']) {
-    'menunggu'   => 'warning',
-    'diproses'   => 'secondary',
-    'disetujui'  => 'info',
-    'selesai'    => 'success',
-    'dibatalkan' => 'danger',
-    default      => 'secondary'
+$st = strtolower($transaksi['status']);
+$badge = match ($st) {
+    'menunggu'   => 'badge-warning',
+    'diproses'   => 'badge-warning',
+    'disetujui'  => 'badge-success',
+    'selesai'    => 'badge-success',
+    'dibatalkan' => 'badge-danger',
+    default      => 'badge-neutral'
 };
 
-/* PATH BUKTI PEMBAYARAN */
 $bukti = $transaksi['bukti_pembayaran']
-    ? "../../uploads/bukti/" . $transaksi['bukti_pembayaran']
+    ? app_path("uploads/bukti/" . SecurityHelper::e($transaksi['bukti_pembayaran']))
     : null;
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Detail Transaksi</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css">
-    <style>
-        .img-thumb {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-        }
-        .img-bukti {
-            max-width: 300px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-    </style>
+    <title>Detail Transaksi #<?= SecurityHelper::e(substr($transaksi['id_transaksi'], 0, 8)) ?> - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Admin | Detail Transaksi</div>
-    <a href="../../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <div class="sidebar">
-        <a href="../dashboard.php">🏠 Dashboard</a>
-        <a href="../peralatan/index.php">🧺 Peralatan</a>
-        <a href="index.php" class="active">💳 Transaksi</a>
-        <a href="../users/index.php">👤 Users</a>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Admin Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">🛡️ <?= SecurityHelper::e($_SESSION['nama'] ?? 'Admin') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
+        </div>
     </div>
+</header>
 
-    <div class="content">
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="../dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="../peralatan/index.php" class="sidebar-nav-item">
+            <span>🧺</span> Peralatan
+        </a>
+        <a href="index.php" class="sidebar-nav-item active">
+            <span>💳</span> Transaksi
+        </a>
+        <a href="../users/index.php" class="sidebar-nav-item">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan & Audit</div>
+        <a href="../audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
 
-        <div class="card">
-            <h2>Detail Transaksi #<?= e(substr($transaksi['id_transaksi'], 0, 8)) ?></h2>
-            <p><strong>Nama Penyewa:</strong> <?= e($transaksi['nama']) ?> (<?= e($transaksi['email']) ?>)</p>
-            <p><strong>Tanggal Sewa:</strong> <?= e($transaksi['tanggal_sewa']) ?></p>
-            <p><strong>Tanggal Kembali:</strong> <?= e($transaksi['tanggal_kembali']) ?></p>
-            <p><strong>Status Saat Ini:</strong> <span class="badge <?= $badge ?>"><?= ucfirst(e($transaksi['status'])) ?></span></p>
-            <p><strong>Total Pembayaran:</strong> Rp <?= number_format($transaksi['total_harga'], 0, ',', '.') ?></p>
-            <p><strong>Alamat:</strong> <?= nl2br(e($transaksi['alamat'] ?? '-')) ?></p>
-            <p><strong>Catatan:</strong> <?= nl2br(e($transaksi['catatan'] ?? '-')) ?></p>
-
-            <hr>
-            <h3>Peralatan yang Disewa</h3>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Gambar</th>
-                        <th>Nama Peralatan</th>
-                        <th>Harga Sewa/Hari</th>
-                        <th>Jumlah</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($details as $d): ?>
-                    <tr>
-                        <td>
-                            <?php if ($d['gambar']): ?>
-                                <img src="../../uploads/peralatan/<?= e($d['gambar']) ?>" class="img-thumb">
-                            <?php endif; ?>
-                        </td>
-                        <td><?= e($d['nama_peralatan']) ?></td>
-                        <td>Rp <?= number_format($d['harga_sewa'], 0, ',', '.') ?></td>
-                        <td><?= e((string)$d['jumlah']) ?></td>
-                        <td>Rp <?= number_format($d['subtotal'], 0, ',', '.') ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-
-            <?php if ($bukti): ?>
-                <hr>
-                <h3>Bukti Pembayaran</h3>
-                <img src="<?= e($bukti) ?>" class="img-bukti" alt="Bukti Pembayaran">
-            <?php endif; ?>
-
-            <hr>
-            <h3>Perbarui Status Transaksi</h3>
-            <form method="POST">
-                <?= csrf_field() ?>
-                <select name="status" required>
-                    <?php foreach (['menunggu', 'disetujui', 'diproses', 'selesai', 'dibatalkan'] as $st): ?>
-                        <option value="<?= $st ?>" <?= $transaksi['status'] === $st ? 'selected' : '' ?>>
-                            <?= ucfirst($st) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" class="btn">Simpan Perubahan</button>
-                <a href="index.php" class="btn-sm" style="display:inline-block; text-decoration:none; padding:10px 15px;">Kembali</a>
-            </form>
+    <!-- CONTENT -->
+    <main class="dashboard-main">
+        <div class="mb-3 d-flex justify-between align-center">
+            <a href="index.php" class="btn btn-outline btn-sm">← Kembali ke Daftar Transaksi</a>
+            <span class="badge <?= $badge ?>">Status: <?= strtoupper(SecurityHelper::e($transaksi['status'])) ?></span>
         </div>
 
-    </div>
+        <div class="story-grid mb-4">
+            <!-- DATA TRANSAKSI -->
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>📑</span> Rincian Pesanan #<?= SecurityHelper::e(substr($transaksi['id_transaksi'], 0, 8)) ?>
+                </h2>
+
+                <div class="detail-specs">
+                    <div class="detail-spec-item">
+                        <span>Penyewa</span>
+                        <strong><?= SecurityHelper::e($transaksi['nama']) ?> (<?= SecurityHelper::e($transaksi['email']) ?>)</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>No. HP / WA</span>
+                        <strong><?= SecurityHelper::e($transaksi['no_hp'] ?: '-') ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Jadwal Sewa</span>
+                        <strong><?= SecurityHelper::e(date('d M Y', strtotime($transaksi['tanggal_sewa']))) ?> s/d <?= SecurityHelper::e(date('d M Y', strtotime($transaksi['tanggal_kembali']))) ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Total Tagihan</span>
+                        <strong class="text-primary"><?= SecurityHelper::rupiah($transaksi['total_harga']) ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Alamat Pengiriman</span>
+                        <div class="text-right"><?= nl2br(SecurityHelper::e($transaksi['alamat'] ?: '-')) ?></div>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Catatan Pesanan</span>
+                        <div class="text-right"><?= nl2br(SecurityHelper::e($transaksi['catatan'] ?: '-')) ?></div>
+                    </div>
+                </div>
+
+                <!-- UPDATE STATUS FORM -->
+                <div class="mt-4 pt-3" style="border-top:1px solid var(--border-color);">
+                    <h3 class="checkout-card-title">
+                        <span>⚙️</span> Perbarui Status Pesanan
+                    </h3>
+                    <form method="POST" class="d-flex gap-2 align-center">
+                        <?= SecurityHelper::csrfField() ?>
+                        <select name="status" class="form-control flex-1" required>
+                            <?php foreach (['menunggu', 'disetujui', 'diproses', 'selesai', 'dibatalkan'] as $st): ?>
+                                <option value="<?= $st ?>" <?= $transaksi['status'] === $st ? 'selected' : '' ?>>
+                                    <?= ucfirst($st) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="btn btn-primary">
+                            Simpan Status
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BUKTI PEMBAYARAN -->
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>📸</span> Bukti Pembayaran
+                </h2>
+
+                <?php if ($bukti): ?>
+                    <div class="text-center">
+                        <img src="<?= $bukti ?>" class="img-bukti-card" alt="Bukti Transfer">
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <p class="text-muted text-sm">Tidak ada lampiran bukti transfer (atau memilih metode COD/Bayar di Tempat).</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- PERALATAN DISEWA TABLE -->
+        <div class="checkout-card">
+            <h2 class="checkout-card-title">
+                <span>🧺</span> Item Peralatan yang Disewa
+            </h2>
+
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Gambar</th>
+                            <th>Nama Peralatan</th>
+                            <th>Tarif Sewa / Hari</th>
+                            <th>Jumlah</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($details as $d): ?>
+                        <tr>
+                            <td>
+                                <?php if ($d['gambar']): ?>
+                                    <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($d['gambar'])) ?>" 
+                                         class="img-product-table" alt="Peralatan">
+                                <?php endif; ?>
+                            </td>
+                            <td><strong><?= SecurityHelper::e($d['nama_peralatan']) ?></strong></td>
+                            <td><?= SecurityHelper::rupiah($d['harga_sewa']) ?></td>
+                            <td class="text-bold"><?= (int)$d['jumlah'] ?> unit</td>
+                            <td class="text-bold text-primary"><?= SecurityHelper::rupiah($d['subtotal']) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<div class="footer">
-    © <?= date('Y') ?> Admin | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

@@ -7,91 +7,105 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Kontak & Ketentuan</title>
-<link rel="stylesheet" href="../../assets/css/pelanggan.css">
+    <meta charset="UTF-8">
+    <title>Kontak & Bantuan - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php">Peralatan</a>
-        <a href="keranjang.php">Keranjang</a>
-        <a href="riwayat.php">Riwayat</a>
-        <a href="kontak.php" class="active">Kontak</a>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-        <div class="akun-wrapper">
-            <button class="btn-login">
-                <?= e($nama) ?> ▾
-            </button>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
 
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link">Peralatan</a>
+            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link active">Kontak</a>
+
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </header>
 
-<!-- TITLE -->
-<section class="page-title">
-    <h1>📞 Kontak & Ketentuan Penyewaan</h1>
-    <p>Informasi penting sebelum melakukan pemesanan</p>
-</section>
+<main class="main-content">
+    <div class="container">
 
-<!-- INFORMASI -->
-<section class="info-section">
-    <div class="info-container">
-
-        <div class="info-left">
-            <h2>Ketentuan Penyewaan</h2>
-            <ul class="ketentuan-list">
-                <li>Pemesanan dilakukan melalui sistem dan data harus diisi dengan benar.</li>
-                <li>Penyewaan diproses setelah pembayaran dikonfirmasi.</li>
-                <li>Pembayaran yang sudah dilakukan tidak dapat dikembalikan.</li>
-                <li>Peralatan diambil dan dikembalikan sesuai jadwal yang disepakati.</li>
-                <li>Keterlambatan pengembalian akan dikenakan denda.</li>
-                <li>Penyewa wajib menjaga kondisi dan kebersihan peralatan.</li>
-                <li>Kerusakan atau kehilangan peralatan menjadi tanggung jawab penyewa.</li>
-                <li>Dilarang memindahtangankan peralatan tanpa izin pihak penyedia.</li>
-                <li>Pembatalan sepihak dapat dikenakan biaya administrasi.</li>
-                <li>Dengan melakukan penyewaan, penyewa dianggap menyetujui seluruh ketentuan.</li>
-            </ul>
+        <div class="page-header">
+            <h1 class="page-title">📞 Layanan Pelanggan & Bantuan</h1>
+            <p class="page-subtitle">Butuh bantuan seputar pesanan atau pertanyaan teknis? Kami siap melayani Anda.</p>
         </div>
 
-        <div class="info-right">
-            <h2>Kontak Kami</h2>
-
-            <div class="kontak-item">
-                <span>📍</span>
-                <p><strong>Alamat</strong><br>Cirebon, Jawa Barat</p>
+        <div class="story-grid">
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>📜</span> Panduan Singkat Penyewaan
+                </h2>
+                <ul class="criteria-list">
+                    <li class="criteria-item is-valid"><span class="criteria-icon">✓</span> Pengambilan peralatan dapat diambil sendiri di workshop atau menggunakan jasa antar.</li>
+                    <li class="criteria-item is-valid"><span class="criteria-icon">✓</span> Seluruh peralatan telah dibersihkan secara higienis sebelum diserahkan.</li>
+                    <li class="criteria-item is-valid"><span class="criteria-icon">✓</span> Harap simpan bukti sewa untuk diperlihatkan saat pengembalian barang.</li>
+                </ul>
             </div>
 
-            <div class="kontak-item">
-                <span>📱</span>
-                <p><strong>WhatsApp</strong><br>083167894444</p>
-            </div>
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>💬</span> Kontak Tulip.projectt
+                </h2>
+                <div class="detail-specs">
+                    <div class="detail-spec-item">
+                        <span>📱 WhatsApp Hotline</span>
+                        <strong>0831 6789 4444</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>📧 Email Support</span>
+                        <strong>tulip.projectt@gmail.com</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>📍 Alamat</span>
+                        <strong>Sindanglaut, Cirebon, Jawa Barat</strong>
+                    </div>
+                </div>
 
-            <div class="kontak-item">
-                <span>📧</span>
-                <p><strong>Email</strong><br>tulip.projectt@gmail.com</p>
-            </div>
-
-            <div class="kontak-item">
-                <span>🕘</span>
-                <p><strong>Jam Operasional</strong><br>08.00 – 20.00 WIB</p>
+                <div class="mt-3">
+                    <a href="https://wa.me/6283167894444" target="_blank" rel="noopener noreferrer" class="btn btn-accent btn-full">
+                        💬 Hubungi WhatsApp Sekarang
+                    </a>
+                </div>
             </div>
         </div>
+
     </div>
-</section>
+</main>
 
-<!-- FOOTER -->
-<footer class="footer">
-    © <?= date('Y') ?> Tulip.projectt | Penyewaan Peralatan Piknik
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+    </div>
 </footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

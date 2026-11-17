@@ -9,6 +9,10 @@ $stmt = $pdo->prepare("
     SELECT 
         t.id_transaksi,
         t.status,
+        t.total_harga,
+        t.tanggal_sewa,
+        t.tanggal_kembali,
+        t.created_at,
         p.nama_peralatan,
         p.harga_sewa,
         p.gambar,
@@ -27,103 +31,138 @@ $riwayat = $stmt->fetchAll();
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Riwayat Sewa</title>
-    <link rel="stylesheet" href="../../assets/css/pelanggan.css">
-    <link rel="stylesheet" href="../../assets/css/transaksi_sewa.css">
+    <title>Riwayat Penyewaan - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php">Peralatan</a>
-        <a href="keranjang.php">Keranjang</a>
-        <a href="riwayat.php" class="active">Riwayat</a>
-        <a href="kontak.php">Kontak</a>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-        <div class="akun-wrapper">
-            <button class="btn-login">
-                <?= e($nama) ?> ▾
-            </button>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
 
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link">Peralatan</a>
+            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link active">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link">Kontak</a>
+
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </header>
 
-<section class="page-title">
-    <h1>📜 Riwayat Sewa</h1>
-    <p>Ringkasan penyewaan peralatan</p>
-</section>
+<main class="main-content">
+    <div class="container">
 
-<div class="riwayat-wrapper">
-    <div class="riwayat-card">
+        <div class="page-header">
+            <h1 class="page-title">📜 Riwayat Penyewaan Anda</h1>
+            <p class="page-subtitle">Daftar transaksi dan status pemrosesan sewa peralatan piknik Anda.</p>
+        </div>
 
         <?php if (empty($riwayat)): ?>
-            <div class="riwayat-kosong">
-                <p>Belum ada riwayat sewa</p>
-                <a href="peralatan.php" class="btn-login" style="margin-top: 15px; display: inline-block;">Sewa Sekarang</a>
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3 class="empty-state-title">Belum Ada Riwayat Sewa</h3>
+                <p class="empty-state-desc">Anda belum pernah melakukan pemesanan sewa peralatan piknik bersama kami. Yuk pesan set favoritmu sekarang!</p>
+                <a href="peralatan.php" class="btn btn-primary btn-lg cart-empty-btn">
+                    Sewa Paket Sekarang
+                </a>
             </div>
         <?php else: ?>
-
-        <table class="riwayat-table">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Peralatan</th>
-                    <th>Harga / Hari</th>
-                    <th>Jumlah</th>
-                    <th>Subtotal</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-
-            <?php 
-             $no = 1;
-             foreach ($riwayat as $row): ?>
-                <tr>
-                    <td><?= $no++ ?></td>
-                    <td style="text-align:left">
-                        <div style="display:flex; gap:10px; align-items:center;">
-                            <img src="../../uploads/peralatan/<?= e($row['gambar']) ?>"
-                                 alt="<?= e($row['nama_peralatan']) ?>"
-                                 style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
-                            <strong><?= e($row['nama_peralatan']) ?></strong>
-                        </div>
-                    </td>
-                    <td>Rp <?= number_format((float)$row['harga_sewa'], 0, ',', '.') ?></td>
-                    <td><?= (int)$row['jumlah'] ?></td>
-                    <td>Rp <?= number_format((float)$row['subtotal'], 0, ',', '.') ?></td>
-                    <td>
-                        <span class="status <?= strtolower(e($row['status'])) ?>">
-                            <?= ucfirst(e($row['status'])) ?>
-                        </span>
-                    </td>
-                    <td>
-                        <a href="detail_sewa.php?id=<?= urlencode($row['id_transaksi']) ?>"
-                           class="btn-login">
-                            Detail
-                        </a>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-
-            </tbody>
-        </table>
-
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Paket / Peralatan</th>
+                            <th>Tanggal Sewa</th>
+                            <th>Tarif / Hari</th>
+                            <th>Jumlah</th>
+                            <th>Subtotal</th>
+                            <th>Status Pesanan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $no = 1;
+                        foreach ($riwayat as $row): 
+                            $status = strtolower($row['status']);
+                            $badgeClass = 'badge-warning';
+                            if ($status === 'selesai' || $status === 'disetujui') {
+                                $badgeClass = 'badge-success';
+                            } elseif ($status === 'dibatalkan') {
+                                $badgeClass = 'badge-danger';
+                            }
+                        ?>
+                        <tr>
+                            <td class="text-muted"><?= $no++ ?></td>
+                            <td>
+                                <div class="d-flex align-center gap-2">
+                                    <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($row['gambar'])) ?>" 
+                                         alt="<?= SecurityHelper::e($row['nama_peralatan']) ?>" 
+                                         class="img-product-table">
+                                    <div>
+                                        <strong class="text-dark"><?= SecurityHelper::e($row['nama_peralatan']) ?></strong>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="cell-nowrap">
+                                <?= SecurityHelper::e(date('d M Y', strtotime($row['tanggal_sewa']))) ?> 
+                                <br>
+                                <span class="text-xs">s/d <?= SecurityHelper::e(date('d M Y', strtotime($row['tanggal_kembali']))) ?></span>
+                            </td>
+                            <td><?= SecurityHelper::rupiah($row['harga_sewa']) ?></td>
+                            <td class="text-bold"><?= (int)$row['jumlah'] ?> unit</td>
+                            <td class="text-bold text-primary"><?= SecurityHelper::rupiah($row['subtotal']) ?></td>
+                            <td>
+                                <span class="badge <?= $badgeClass ?>">
+                                    <?= SecurityHelper::e(strtoupper($row['status'])) ?>
+                                </span>
+                            </td>
+                            <td>
+                                <a href="detail_sewa.php?id=<?= urlencode($row['id_transaksi']) ?>" class="btn btn-outline btn-sm">
+                                    Rincian
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
-    </div>
-</div>
 
-<footer class="footer">
-    © <?= date('Y') ?> Tulip.projectt | Penyewaan Peralatan Piknik
+    </div>
+</main>
+
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+    </div>
 </footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

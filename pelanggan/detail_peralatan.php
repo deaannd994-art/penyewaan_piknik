@@ -21,69 +21,98 @@ if (!$data) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title><?= e($data['nama_peralatan']) ?></title>
-<link rel="stylesheet" href="../assets/css/pelanggan.css">
+    <meta charset="UTF-8">
+    <title><?= SecurityHelper::e($data['nama_peralatan']) ?> - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php" class="active">Peralatan</a>
-        <a href="kontak.php">Kontak</a>
-        <a href="../auth/login_pelanggan.php" class="btn-login">Login / Sign Up</a>
-    </nav>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
+
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
+
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link active">Peralatan</a>
+            <a href="kontak.php" class="nav-link">Kontak & Ketentuan</a>
+            <div class="nav-actions">
+                <a href="<?= app_path('auth/login_pelanggan.php') ?>" class="btn btn-outline btn-sm">Login</a>
+                <a href="<?= app_path('auth/register.php') ?>" class="btn btn-primary btn-sm">Daftar Akun</a>
+            </div>
+        </nav>
+    </div>
 </header>
 
-<main class="page-content">
-    <div class="detail-container">
+<main class="main-content">
+    <div class="container">
 
-        <section class="detail-peralatan">
+        <div class="mb-3">
+            <a href="peralatan.php" class="btn btn-outline btn-sm">← Kembali ke Katalog</a>
+        </div>
 
-            <img src="../uploads/peralatan/<?= e($data['gambar']) ?>" alt="<?= e($data['nama_peralatan']) ?>" class="detail-img">
-
-            <div class="detail-info">
-
-                <h1><?= e($data['nama_peralatan']) ?></h1>
-
-                <p class="harga">
-                    Rp <?= number_format((float)$data['harga_sewa'], 0, ',', '.') ?> / hari
-                </p>
-
-                <p class="deskripsi">
-                    <?= nl2br(e($data['deskripsi'])) ?>
-                </p>
-
-                <div class="detail-bottom">
-
-                    <div class="detail-actions">
-                        <a href="../auth/login_pelanggan.php" class="btn-login">
-                             + Keranjang                            
-                        </a>
-
-                        <a href="../auth/login_pelanggan.php" class="btn-login">
-                            Sewa Sekarang
-                        </a>
-                    </div>
-
-                    <a href="peralatan.php" class="btn-kembali">
-                        ← Kembali
-                    </a>
-
-                </div>
+        <div class="detail-layout">
+            <div class="detail-gallery">
+                <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($data['gambar'])) ?>" 
+                     alt="<?= SecurityHelper::e($data['nama_peralatan']) ?>">
             </div>
 
-        </section>
+            <div class="detail-info">
+                <div class="mb-2">
+                    <?php if ($data['status'] === 'tersedia' && (int)$data['stok'] > 0): ?>
+                        <span class="badge badge-success">Stok Tersedia (<?= (int)$data['stok'] ?> Unit)</span>
+                    <?php else: ?>
+                        <span class="badge badge-danger">Stok Sedang Habis</span>
+                    <?php endif; ?>
+                </div>
+
+                <h1 class="detail-title"><?= SecurityHelper::e($data['nama_peralatan']) ?></h1>
+                <div class="detail-price"><?= SecurityHelper::rupiah($data['harga_sewa']) ?> <span class="text-muted text-sm">/ hari</span></div>
+
+                <div class="card-desc mb-3">
+                    <?= nl2br(SecurityHelper::e($data['deskripsi'])) ?>
+                </div>
+
+                <div class="detail-specs">
+                    <div class="detail-spec-item">
+                        <span>Kategori Paket</span>
+                        <strong>Set Piknik Lengkap</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Kondisi Peralatan</span>
+                        <strong>Bersih, Higienis & Siap Pakai</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Durasi Minimal Sewa</span>
+                        <strong>1 Hari (24 Jam)</strong>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <a href="<?= app_path('auth/login_pelanggan.php') ?>" class="btn btn-primary btn-lg btn-full">
+                        🧺 Login untuk Menyewa
+                    </a>
+                </div>
+            </div>
+        </div>
 
     </div>
 </main>
 
-<footer class="footer">
-    © <?= date('Y') ?> Tulip.projectt
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+    </div>
 </footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

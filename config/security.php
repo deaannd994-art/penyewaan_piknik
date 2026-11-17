@@ -90,6 +90,40 @@ function require_csrf(): void {
     }
 }
 
+/**
+ * SecurityHelper: Object-oriented standard for XSS output escaping, CSRF, and data formatting
+ * Compliant with OWASP Top 10 & Strict CSP Standards
+ */
+class SecurityHelper {
+    public static function e(?string $string): string {
+        return htmlspecialchars((string) $string, ENT_QUOTES | ENT_HTML5 | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    public static function csrfToken(): string {
+        return get_csrf_token();
+    }
+
+    public static function csrfField(): string {
+        return '<input type="hidden" name="csrf_token" value="' . self::e(get_csrf_token()) . '">';
+    }
+
+    public static function verifyCsrf(?string $token): bool {
+        return verify_csrf_token($token);
+    }
+
+    public static function requireCsrf(): void {
+        require_csrf();
+    }
+
+    public static function rupiah(float|int|string|null $amount): string {
+        return 'Rp ' . number_format((float)$amount, 0, ',', '.');
+    }
+
+    public static function sanitizeInput(?string $data): string {
+        return trim((string)$data);
+    }
+}
+
 // Kriptografi Password (HMAC-SHA256 Pepper + Argon2id) (OWASP A02: Cryptographic Failures)
 function hash_password_peppered(string $password): string {
     $pepper = (string) env('APP_PEPPER_KEY', '');

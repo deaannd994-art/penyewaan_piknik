@@ -5,7 +5,7 @@ init_secure_session();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($_SESSION['redirect'])) {
                 $tujuan = $_SESSION['redirect'];
                 unset($_SESSION['redirect']);
-                // Hanya izinkan redirect internal relative path (OWASP A01: Anti Open-Redirect)
                 if (str_starts_with($tujuan, '/') && !str_starts_with($tujuan, '//') && !str_starts_with($tujuan, '/\\') && !str_contains($tujuan, ':')) {
                     header("Location: " . $tujuan);
                     exit;
@@ -58,39 +57,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Login Pelanggan</title>
-    <link rel="stylesheet" href="../assets/css/auth.css">
+    <title>Login Pelanggan - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<div class="auth-container">
-    <h2>Login Pelanggan
-        <br>🧺 Tulip.projectt
-    </h2>
-
-    <?php if ($error): ?>
-        <p style="color:red; text-align:center;"><?= e($error) ?></p>
-    <?php endif; ?>
-
-    <form method="POST">
-        <?= csrf_field() ?>
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required autofocus>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-brand">
+                <span>🧺</span> Tulip.projectt
+            </div>
+            <h1 class="auth-title">Masuk ke Akun Anda</h1>
+            <p class="auth-subtitle">Kelola sewa peralatan piknik dan pantau pesanan Anda.</p>
         </div>
 
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" name="password" required>
+        <?php if ($error): ?>
+            <div class="alert alert-danger">
+                <span>⚠️</span>
+                <div><?= SecurityHelper::e($error) ?></div>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST">
+            <?= SecurityHelper::csrfField() ?>
+
+            <div class="form-group">
+                <label class="form-label" for="loginEmail">Alamat Email</label>
+                <input type="email" id="loginEmail" name="email" class="form-control" 
+                       value="<?= SecurityHelper::e($_POST['email'] ?? '') ?>" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="loginPassword">Password</label>
+                <div class="password-field-wrapper">
+                    <input type="password" id="loginPassword" name="password" class="form-control" required>
+                    <button type="button" class="btn-toggle-password" data-target="loginPassword" aria-label="Lihat Password">
+                        👁️‍🗨️
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full btn-lg mt-3">
+                Masuk Sekarang
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Belum memiliki akun? <a href="register.php" class="text-bold">Daftar sekarang</a>
+            <div class="mt-2">
+                <a href="<?= app_path('pelanggan/dashboard.php') ?>" class="text-sm text-muted">← Kembali ke Beranda</a>
+            </div>
         </div>
-
-        <button type="submit" class="btn">Login</button>
-    </form>
-
-    <div class="auth-footer">
-        Belum punya akun? <a href="register.php">Daftar sekarang</a>
     </div>
 </div>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

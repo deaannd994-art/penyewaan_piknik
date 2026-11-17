@@ -7,7 +7,6 @@ if (!is_valid_uuid($id_user)) {
     die('400 Bad Request: ID user tidak valid');
 }
 
-/* DATA USER */
 $stmtUser = $pdo->prepare("
     SELECT id_user, nama, email, no_hp, alamat, created_at
     FROM users
@@ -21,7 +20,6 @@ if (!$user) {
     die('404 Not Found: User tidak ditemukan');
 }
 
-/* RIWAYAT TRANSAKSI USER */
 $stmtTx = $pdo->prepare("
     SELECT 
         t.id_transaksi,
@@ -44,120 +42,161 @@ $riwayat = $stmtTx->fetchAll();
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Admin | Detail User</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css">
-    <style>
-        .img-thumb {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-        }
-    </style>
+    <title>Detail User: <?= SecurityHelper::e($user['nama']) ?> - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Admin | Penyewaan Peralatan Piknik</div>
-    <a href="../../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <a href="../dashboard.php">🏠 Dashboard</a>
-        <a href="../peralatan/index.php">🧺 Peralatan</a>
-        <a href="../transaksi/index.php">💳 Transaksi</a>
-        <a href="index.php" class="active">👤 Users</a>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Admin Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">🛡️ <?= SecurityHelper::e($_SESSION['nama'] ?? 'Admin') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
+        </div>
     </div>
+</header>
+
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="../dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="../peralatan/index.php" class="sidebar-nav-item">
+            <span>🧺</span> Peralatan
+        </a>
+        <a href="../transaksi/index.php" class="sidebar-nav-item">
+            <span>💳</span> Transaksi
+        </a>
+        <a href="index.php" class="sidebar-nav-item active">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan & Audit</div>
+        <a href="../audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
 
     <!-- CONTENT -->
-    <div class="content">
-
-        <h2>Detail Pelanggan</h2>
-
-        <!-- INFO USER -->
-        <div class="card">
-            <p><strong>Nama:</strong> <?= e($user['nama']) ?></p>
-            <p><strong>Email:</strong> <?= e($user['email']) ?></p>
-            <p><strong>No HP:</strong> <?= e($user['no_hp'] ?? '-') ?></p>
-            <p><strong>Alamat:</strong> <?= e($user['alamat'] ?? '-') ?></p>
-            <p><strong>Tanggal Daftar:</strong> <?= date('d-m-Y', strtotime($user['created_at'])) ?></p>
-            <a href="index.php" class="btn-sm" style="display:inline-block; margin-top:10px; text-decoration:none;">Kembali</a>
+    <main class="dashboard-main">
+        <div class="mb-3">
+            <a href="index.php" class="btn btn-outline btn-sm">← Kembali ke Daftar Users</a>
         </div>
 
-        <!-- RIWAYAT TRANSAKSI -->
-        <div class="card">
-            <h3>Riwayat Pemesanan</h3>
+        <div class="story-grid mb-4">
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>👤</span> Profil Pengguna: <?= SecurityHelper::e($user['nama']) ?>
+                </h2>
 
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Tanggal</th>
-                        <th>Gambar</th>
-                        <th>Peralatan</th>
-                        <th>Qty</th>
-                        <th>Subtotal</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php
-                $no = 1;
-                foreach ($riwayat as $row):
-                    $badge = match ($row['status']) {
-                        'menunggu'   => 'warning',
-                        'diproses'   => 'secondary',
-                        'disetujui'  => 'info',
-                        'selesai'    => 'success',
-                        'dibatalkan' => 'danger',
-                        default      => 'secondary'
-                    };
-                    $gambar = $row['gambar']
-                        ? "../../uploads/peralatan/" . $row['gambar']
-                        : "../../assets/img/no-image.png";
-                ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
-                        <td align="center">
-                            <img src="<?= e($gambar) ?>" class="img-thumb">
-                        </td>
-                        <td><?= e($row['nama_peralatan']) ?></td>
-                        <td><?= e((string)$row['jumlah']) ?></td>
-                        <td>Rp <?= number_format($row['subtotal'], 0, ',', '.') ?></td>
-                        <td>
-                            <span class="badge <?= $badge ?>">
-                                <?= ucfirst(e($row['status'])) ?>
-                            </span>
-                        </td>
-                        <td>
-                            <a href="../transaksi/detail.php?id=<?= urlencode($row['id_transaksi']) ?>" class="btn-sm logout">
-                                Detail
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+                <div class="detail-specs">
+                    <div class="detail-spec-item">
+                        <span>Nama Lengkap</span>
+                        <strong><?= SecurityHelper::e($user['nama']) ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Email Terdaftar</span>
+                        <strong><?= SecurityHelper::e($user['email']) ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>No. HP / WA</span>
+                        <strong><?= SecurityHelper::e($user['no_hp'] ?: '-') ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Alamat</span>
+                        <div class="text-right"><?= nl2br(SecurityHelper::e($user['alamat'] ?: '-')) ?></div>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Terdaftar Sejak</span>
+                        <strong><?= SecurityHelper::e(date('d M Y, H:i', strtotime($user['created_at']))) ?> WIB</strong>
+                    </div>
+                </div>
+            </div>
 
-            <?php if (empty($riwayat)): ?>
-                <p><em>User ini belum pernah melakukan transaksi.</em></p>
-            <?php endif; ?>
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>📊</span> Statistik Aktivitas
+                </h2>
+                <div class="summary-row">
+                    <span>Total Transaksi Dilakukan:</span>
+                    <strong class="text-primary"><?= count($riwayat) ?> Transaksi</strong>
+                </div>
+            </div>
         </div>
 
-    </div>
+        <!-- RIWAYAT TRANSAKSI USER -->
+        <div class="checkout-card">
+            <h2 class="checkout-card-title">
+                <span>📑</span> Riwayat Transaksi Pengguna
+            </h2>
+
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Peralatan</th>
+                            <th>Jumlah</th>
+                            <th>Subtotal</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($riwayat)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Pengguna ini belum pernah melakukan transaksi sewa.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php 
+                            $no = 1;
+                            foreach ($riwayat as $r):
+                                $st = strtolower($r['status']);
+                                $bClass = 'badge-warning';
+                                if ($st === 'selesai' || $st === 'disetujui') $bClass = 'badge-success';
+                                if ($st === 'dibatalkan') $bClass = 'badge-danger';
+                            ?>
+                            <tr>
+                                <td class="text-muted"><?= $no++ ?></td>
+                                <td class="cell-nowrap"><?= SecurityHelper::e(date('d M Y', strtotime($r['created_at']))) ?></td>
+                                <td>
+                                    <div class="d-flex align-center gap-2">
+                                        <?php if ($r['gambar']): ?>
+                                            <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($r['gambar'])) ?>" 
+                                                 class="img-product-table" alt="Item">
+                                        <?php endif; ?>
+                                        <strong><?= SecurityHelper::e($r['nama_peralatan']) ?></strong>
+                                    </div>
+                                </td>
+                                <td class="text-bold"><?= (int)$r['jumlah'] ?></td>
+                                <td class="text-bold text-primary"><?= SecurityHelper::rupiah($r['subtotal']) ?></td>
+                                <td>
+                                    <span class="badge <?= $bClass ?>">
+                                        <?= strtoupper(SecurityHelper::e($r['status'])) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-    © <?= date('Y') ?> Admin | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

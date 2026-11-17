@@ -8,7 +8,7 @@ $error = '';
    SIMPAN / UPDATE USER
 ======================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($_POST['update']))) {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $nama   = trim($_POST['nama'] ?? '');
     $email  = strtolower(trim($_POST['email'] ?? ''));
@@ -24,7 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($
             if (!is_strong_password($password)) {
                 $error = "Password minimal 8 karakter dan harus mengandung kombinasi huruf besar, huruf kecil, angka, dan simbol!";
             } else {
-                // Cek duplikasi email
                 $stmtCek = $pdo->prepare("SELECT id_user FROM users WHERE email = :email LIMIT 1");
                 $stmtCek->execute(['email' => $email]);
                 if ($stmtCek->fetch()) {
@@ -59,7 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($
             if (!is_valid_uuid($id_user)) {
                 $error = "ID User tidak valid!";
             } else {
-                // Cek apakah email digunakan user lain
                 $stmtCek = $pdo->prepare("SELECT id_user FROM users WHERE email = :email AND id_user != :id LIMIT 1");
                 $stmtCek->execute(['email' => $email, 'id' => $id_user]);
                 if ($stmtCek->fetch()) {
@@ -122,16 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['simpan']) || isset($
    HAPUS USER
 ======================================================== */
 if (isset($_GET['hapus'])) {
-    $id_user = $_GET['hapus'];
+    $id = $_GET['hapus'];
     $csrf = $_GET['csrf'] ?? '';
 
-    if (verify_csrf_token($csrf) && is_valid_uuid($id_user)) {
-        // Jangan izinkan admin menghapus akunnya sendiri
-        if ($id_user !== $_SESSION['id_user']) {
-            $stmtDel = $pdo->prepare("DELETE FROM users WHERE id_user = :id");
-            $stmtDel->execute(['id' => $id_user]);
+    if (SecurityHelper::verifyCsrf($csrf) && is_valid_uuid($id)) {
+        $stmtCekRole = $pdo->prepare("SELECT role FROM users WHERE id_user = :id LIMIT 1");
+        $stmtCekRole->execute(['id' => $id]);
+        $row = $stmtCekRole->fetch();
 
-            log_audit($pdo, $_SESSION['id_user'], 'DELETE_USER', 'users', 'success', "ID: {$id_user}");
+        if ($row && $row['role'] !== 'admin' && $row['role'] !== 'owner') {
+            $stmt = $pdo->prepare("DELETE FROM users WHERE id_user = :id");
+            $stmt->execute(['id' => $id]);
+
+            log_audit($pdo, $_SESSION['id_user'], 'DELETE_USER', 'users', 'success', "ID: {$id}");
         }
     }
     header("Location: index.php");
@@ -139,159 +140,188 @@ if (isset($_GET['hapus'])) {
 }
 
 /* ========================================================
-   EDIT DATA
+   EDIT USER
 ======================================================== */
 $edit = null;
 if (isset($_GET['edit']) && is_valid_uuid($_GET['edit'])) {
-    $stmtEdit = $pdo->prepare("SELECT * FROM users WHERE id_user = :id LIMIT 1");
-    $stmtEdit->execute(['id' => $_GET['edit']]);
-    $edit = $stmtEdit->fetch();
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id_user = :id LIMIT 1");
+    $stmt->execute(['id' => $_GET['edit']]);
+    $edit = $stmt->fetch();
 }
 
-/* ========================================================
-   DATA USERS PELANGGAN
-======================================================== */
-$stmtData = $pdo->query("
-    SELECT id_user, nama, email, no_hp, alamat, created_at
-    FROM users
-    WHERE role = 'pelanggan'
-    ORDER BY created_at DESC
-");
+$stmtData = $pdo->query("SELECT * FROM users WHERE role = 'pelanggan' ORDER BY created_at DESC");
 $data = $stmtData->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Data Users</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css">
+    <title>Manajemen Users - Admin Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Admin | Penyewaan Peralatan Piknik</div>
-    <a href="../../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <div class="sidebar">
-        <a href="../dashboard.php">🏠 Dashboard</a>
-        <a href="../peralatan/index.php">🧺 Peralatan</a>
-        <a href="../transaksi/index.php">💳 Transaksi</a>
-        <a href="index.php" class="active">👤 Users</a>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Admin Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">🛡️ <?= SecurityHelper::e($_SESSION['nama'] ?? 'Admin') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
+        </div>
     </div>
+</header>
 
-    <div class="content">
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="../dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="../peralatan/index.php" class="sidebar-nav-item">
+            <span>🧺</span> Peralatan
+        </a>
+        <a href="../transaksi/index.php" class="sidebar-nav-item">
+            <span>💳</span> Transaksi
+        </a>
+        <a href="index.php" class="sidebar-nav-item active">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan & Audit</div>
+        <a href="../audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="dashboard-main">
+        <div class="page-header">
+            <h1 class="page-title">👤 Manajemen Pengguna Pelanggan</h1>
+            <p class="page-subtitle">Kelola akun pelanggan, perbarui data kontak, atau daftarkan akun baru secara manual.</p>
+        </div>
 
         <?php if ($error): ?>
-            <div style="background:#fee; color:#c00; padding:10px 15px; border-radius:6px; margin-bottom:15px;">
-                <?= e($error) ?>
+            <div class="alert alert-danger mb-3">
+                <span>⚠️</span>
+                <div><?= SecurityHelper::e($error) ?></div>
             </div>
         <?php endif; ?>
 
-        <div class="card">
-            <h3><?= $edit ? 'Edit User' : 'Tambah User' ?></h3>
+        <!-- FORM TAMBAH / EDIT USER -->
+        <div class="checkout-card mb-4">
+            <h2 class="checkout-card-title">
+                <span>📝</span> <?= $edit ? 'Edit Data Pengguna' : 'Tambah Akun Pelanggan Baru' ?>
+            </h2>
 
-            <form method="post" class="form-grid" id="formUser">
-                <?= csrf_field() ?>
+            <form method="POST" id="formUser">
+                <?= SecurityHelper::csrfField() ?>
 
                 <?php if ($edit): ?>
-                    <input type="hidden" name="id_user" value="<?= e($edit['id_user']) ?>">
+                    <input type="hidden" name="id_user" value="<?= SecurityHelper::e($edit['id_user']) ?>">
                 <?php endif; ?>
 
-                <input type="text"
-                       name="nama"
-                       placeholder="Nama"
-                       value="<?= e($edit['nama'] ?? '') ?>"
-                       required>
+                <div class="filter-row mb-3">
+                    <div class="form-group flex-1">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" name="nama" class="form-control"
+                               value="<?= SecurityHelper::e($edit['nama'] ?? '') ?>" required>
+                    </div>
 
-                <input type="email"
-                       name="email"
-                       placeholder="Email"
-                       value="<?= e($edit['email'] ?? '') ?>"
-                       required>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Alamat Email</label>
+                        <input type="email" name="email" class="form-control"
+                               value="<?= SecurityHelper::e($edit['email'] ?? '') ?>" required>
+                    </div>
 
-                <input type="text"
-                       name="no_hp"
-                       placeholder="No HP"
-                       value="<?= e($edit['no_hp'] ?? '') ?>"
-                       required>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Nomor HP / WhatsApp</label>
+                        <input type="tel" name="no_hp" class="form-control"
+                               value="<?= SecurityHelper::e($edit['no_hp'] ?? '') ?>" required>
+                    </div>
+                </div>
 
-                <input type="text"
-                       name="alamat"
-                       placeholder="Alamat"
-                       value="<?= e($edit['alamat'] ?? '') ?>"
-                       required>
+                <div class="filter-row mb-3">
+                    <div class="form-group flex-1">
+                        <label class="form-label">Alamat Lengkap</label>
+                        <input type="text" name="alamat" class="form-control"
+                               value="<?= SecurityHelper::e($edit['alamat'] ?? '') ?>" required>
+                    </div>
 
-                <input type="password"
-                       name="password"
-                       placeholder="<?= $edit ? 'Kosongkan jika tidak diubah' : 'Password (Min 6 Karakter)' ?>"
-                       <?= $edit ? '' : 'required' ?>>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Password <?= $edit ? '(Kosongkan jika tidak diubah)' : '(Min. 8 Karakter Kuat)' ?></label>
+                        <input type="password" name="password" class="form-control"
+                               <?= $edit ? '' : 'required' ?>>
+                    </div>
+                </div>
 
-                <button name="<?= $edit ? 'update' : 'simpan' ?>" class="btn">
-                    <?= $edit ? 'Update' : 'Simpan' ?>
-                </button>
-
-                <button type="button" class="btn-sm" onclick="resetForm()">Batal</button>
+                <div class="d-flex gap-2">
+                    <button type="submit" name="<?= $edit ? 'update' : 'simpan' ?>" class="btn btn-primary">
+                        <?= $edit ? 'Simpan Pembaruan' : 'Daftarkan User' ?>
+                    </button>
+                    <button type="button" id="btnResetUser" class="btn btn-outline">
+                        Batal
+                    </button>
+                </div>
             </form>
-
-            <hr>
-
-            <h3>Daftar Users Pelanggan</h3>
-
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama</th>
-                        <th>Email</th>
-                        <th>No HP</th>
-                        <th>Alamat</th>
-                        <th>Tanggal Daftar</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php $no = 1; foreach ($data as $row): ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td><?= e($row['nama']) ?></td>
-                        <td><?= e($row['email']) ?></td>
-                        <td><?= e($row['no_hp'] ?? '-') ?></td>
-                        <td><?= e($row['alamat'] ?? '-') ?></td>
-                        <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
-                        <td>
-                            <a href="detail.php?id=<?= urlencode($row['id_user']) ?>" class="btn-sm logout">Detail</a>
-                            <a href="?edit=<?= urlencode($row['id_user']) ?>" class="btn-sm edit">Edit</a>
-                            <a href="?hapus=<?= urlencode($row['id_user']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>"
-                               class="btn-sm delete"
-                               onclick="return confirm('Yakin hapus user ini?')">
-                                Hapus
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
         </div>
 
-    </div>
+        <!-- TABEL LIST USERS -->
+        <div class="checkout-card">
+            <h2 class="checkout-card-title">
+                <span>👥</span> Daftar Akun Pelanggan Terdaftar
+            </h2>
+
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Lengkap</th>
+                            <th>Email</th>
+                            <th>No HP</th>
+                            <th>Alamat</th>
+                            <th>Tanggal Daftar</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $no = 1; 
+                        foreach ($data as $row): 
+                        ?>
+                        <tr>
+                            <td class="text-muted"><?= $no++ ?></td>
+                            <td><strong><?= SecurityHelper::e($row['nama']) ?></strong></td>
+                            <td><?= SecurityHelper::e($row['email']) ?></td>
+                            <td><?= SecurityHelper::e($row['no_hp'] ?: '-') ?></td>
+                            <td class="cell-details"><?= SecurityHelper::e($row['alamat'] ?: '-') ?></td>
+                            <td class="cell-nowrap"><?= SecurityHelper::e(date('d M Y', strtotime($row['created_at']))) ?></td>
+                            <td class="cell-nowrap">
+                                <a href="detail.php?id=<?= urlencode($row['id_user']) ?>" class="btn btn-sm btn-outline">Detail</a>
+                                <a href="?edit=<?= urlencode($row['id_user']) ?>" class="btn btn-sm btn-outline">Edit</a>
+                                <a href="?hapus=<?= urlencode($row['id_user']) ?>&csrf=<?= urlencode(SecurityHelper::csrfToken()) ?>"
+                                   class="btn btn-sm btn-outline-danger"
+                                   data-confirm="Hapus pengguna pelanggan ini?">Hapus</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<div class="footer">
-    © <?= date('Y') ?> Admin | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
-<script>
-function resetForm() {
-    const form = document.getElementById('formUser');
-    form.reset();
-    if (window.location.search.includes('edit=')) {
-        window.location.href = 'index.php';
-    }
-}
-</script>
-
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

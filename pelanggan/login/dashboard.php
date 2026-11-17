@@ -15,133 +15,174 @@ $rekomendasi = $stmt->fetchAll();
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard Pelanggan</title>
-<link rel="stylesheet" href="../../assets/css/pelanggan.css">
+    <meta charset="UTF-8">
+    <title>Dashboard Pelanggan - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt </div>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-    <nav class="nav">
-        <a href="dashboard.php" class="active">Home</a>
-        <a href="peralatan.php">Peralatan</a>
-        <a href="keranjang.php">Keranjang</a>
-        <a href="riwayat.php">Riwayat</a>
-        <a href="kontak.php">Kontak</a>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
 
-        <div class="akun-wrapper">
-            <button class="btn-login">
-                <?= e($nama) ?> ▾
-            </button>
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link active">Home</a>
+            <a href="peralatan.php" class="nav-link">Peralatan</a>
+            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link">Kontak</a>
 
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </header>
 
-<!-- HERO -->
-<section class="hero-slider">
-    <div class="slides">
-        <div class="slide active" style="background-image:url('../../assets/basic set piknik.png')"></div>
-        <div class="slide" style="background-image:url('../../assets/piknik kids set.jpg')"></div>
-        <div class="slide" style="background-image:url('../../assets/piknik nature vibes.jpeg')"></div>
-    </div>
+<main class="main-content">
+    <div class="container">
 
-    <div class="hero-content">
-        <h1>Nikmati Piknik Tanpa Ribet </h1>
-        <p>Sewa peralatan piknik lengkap & praktis</p>
-        <a href="peralatan.php" class="btn-primary">Mulai Sewa</a>
-    </div>
-</section>
-
-<section class="rekomendasi">
-    <h1>Rekomendasi Set Piknik</h1>
-    <p>Bikin momen biasa jadi luar biasa bersama tulip.projectt</p>
-
-    <div class="rekomendasi-grid">
-         <?php foreach ($rekomendasi as $row): ?>
-            <div class="card-piknik">
-                <a href="detail_peralatan.php?id=<?= urlencode($row['id_peralatan']) ?>&from=dashboard">
-                    <img src="../../uploads/peralatan/<?= e($row['gambar']) ?>" alt="<?= e($row['nama_peralatan']) ?>">
-                    <h4><?= e($row['nama_peralatan']) ?></h4>
-                </a>
-
-                <div class="harga">
-                    Rp <?= number_format((float)$row['harga_sewa'], 0, ',', '.') ?> / hari
+        <!-- EDITORIAL HERO SECTION -->
+        <section class="hero-editorial">
+            <div class="hero-grid">
+                <div class="hero-text-col">
+                    <div class="hero-badge">
+                        <span>🌸</span>
+                        <span>Halo, <?= SecurityHelper::e($nama) ?>! Siap untuk Berpiknik?</span>
+                    </div>
+                    <h1 class="hero-title">
+                        Wujudkan Momen Piknik Cantik <span class="highlight">Tanpa Ribet</span>
+                    </h1>
+                    <p class="hero-description">
+                        Pilih set piknik favoritmu sekarang. Kami siapkan semuanya agar kamu tinggal datang dan menikmati momen istimewa.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="peralatan.php" class="btn btn-primary btn-lg">
+                            🧺 Mulai Sewa Sekarang
+                        </a>
+                        <a href="keranjang.php" class="btn btn-outline btn-lg">
+                            🛒 Lihat Keranjang
+                        </a>
+                    </div>
                 </div>
 
-                <a href="tambah_keranjang.php?id=<?= urlencode($row['id_peralatan']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>" class="btn-login btn-full">
-                    + Keranjang
-                </a>
+                <div class="hero-visual">
+                    <img src="<?= app_path('assets/basic set piknik.png') ?>" alt="Set Piknik Tulip Project">
+                </div>
             </div>
-        <?php endforeach; ?>
+        </section>
+
+        <!-- REKOMENDASI SECTION -->
+        <section class="page-header">
+            <div class="d-flex justify-between align-center mb-3">
+                <div>
+                    <h2 class="page-title">Rekomendasi Set Piknik Terpopuler</h2>
+                    <p class="page-subtitle">Dipilih khusus untuk menghadirkan kencan piknik terbaik.</p>
+                </div>
+                <a href="peralatan.php" class="btn btn-outline btn-sm">Lihat Semua Katalog →</a>
+            </div>
+
+            <div class="product-grid">
+                <?php foreach ($rekomendasi as $row): ?>
+                <div class="card-piknik">
+                    <div class="card-img-wrapper">
+                        <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($row['gambar'])) ?>" 
+                             alt="<?= SecurityHelper::e($row['nama_peralatan']) ?>" 
+                             loading="lazy">
+                        <div class="card-floating-badge">
+                            <?php if ($row['status'] === 'tersedia' && (int)$row['stok'] > 0): ?>
+                                <span class="badge badge-success">Sisa <?= (int)$row['stok'] ?> Unit</span>
+                            <?php else: ?>
+                                <span class="badge badge-danger">Habis</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <h3 class="card-title">
+                            <a href="detail_peralatan.php?id=<?= urlencode($row['id_peralatan']) ?>">
+                                <?= SecurityHelper::e($row['nama_peralatan']) ?>
+                            </a>
+                        </h3>
+                        <p class="card-desc">
+                            <?= SecurityHelper::e($row['deskripsi']) ?>
+                        </p>
+
+                        <div class="card-price-row">
+                            <div>
+                                <div class="price-tag"><?= SecurityHelper::rupiah($row['harga_sewa']) ?></div>
+                                <div class="price-unit">per hari penyewaan</div>
+                            </div>
+                        </div>
+
+                        <div class="card-actions">
+                            <a href="detail_peralatan.php?id=<?= urlencode($row['id_peralatan']) ?>" class="btn btn-outline btn-sm">
+                                Detail
+                            </a>
+                            <a href="tambah_keranjang.php?id=<?= urlencode($row['id_peralatan']) ?>&csrf=<?= urlencode(SecurityHelper::csrfToken()) ?>" class="btn btn-primary btn-sm">
+                                + Keranjang
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+
+        <!-- STORY SECTION -->
+        <section class="story-section">
+            <div class="story-grid">
+                <div class="story-content">
+                    <h2>Wujudkan Kencan Impianmu Jadi Kenyataan!</h2>
+                    <p>
+                        <strong>Tulip.projectt</strong> menyediakan jasa sewa set piknik dan dekorasi estetik untuk mempermudah persiapanmu, sekaligus memberikan pengalaman kencan piknik (<em>picnic-date</em>) yang unik, nyaman, dan tak terlupakan.
+                    </p>
+                    <div class="benefits-grid">
+                        <div class="benefit-card">
+                            <strong>✨ Nuansa Estetik</strong>
+                            Sentuhan dekorasi hangat dan fotogenik.
+                        </div>
+                        <div class="benefit-card">
+                            <strong>🎒 Praktis</strong>
+                            Peralatan lengkap dan higienis siap pakai.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="story-visual">
+                    <img src="<?= app_path('assets/piknik date.jpg') ?>" alt="Picnic Date Estetik" loading="lazy">
+                </div>
+            </div>
+        </section>
+
     </div>
-</section>
+</main>
 
-<!-- ABOUT / STORY -->
-<section class="about-highlight">
-    <div class="about-container">
-
-        <div class="about-text">
-            <h2>Wujudkan Kencan Impianmu Jadi Kenyataan!</h2>
-
-            <p>
-                <strong>tulip.projectt</strong> hadir sebagai solusi praktis untuk kamu yang ingin
-                menciptakan momen spesial tanpa ribet. Kami menyediakan jasa sewa set piknik dan
-                dekorasi estetik yang dirancang khusus untuk mempermudah persiapanmu, sekaligus
-                memberikan pengalaman kencan piknik (<em>picnic-date</em>) yang unik, nyaman,
-                dan tak terlupakan.
-            </p>
-
-            <p>
-                Selama perjalanan kami, kami merasa terhormat telah menjadi <em>"sahabat"</em>
-                yang menemani ribuan momen berharga pelanggan. Bukan sekadar piknik biasa,
-                kami hadir di setiap detik spesialmu—mulai dari perayaan ulang tahun,
-                anniversary, kejutan lamaran, hingga sesi foto pre-wedding dan bridal shower.
-            </p>
-
-            <p>
-                Kami percaya bahwa setiap momen layak dirayakan dengan indah. Itulah mengapa
-                kami terus berinovasi menyediakan berbagai pilihan set piknik, baik untuk
-                suasana outdoor yang asri maupun konsep indoor yang hangat, yang tersedia
-                untuk disewa setiap hari.
-            </p>
-
-            <h4>Kenapa harus <span>tulip.projectt</span>?</h4>
-
-            <ul>
-                <li>✨ <strong>Pengalaman Kencan Unik</strong> – Mengubah ruang biasa jadi penuh keajaiban</li>
-                <li>📸 <strong>Pencipta Momen Berharga</strong> – Pulang dengan senyuman & foto cantik</li>
-                <li>🤍 <strong>Sahabat Terbaikmu</strong> – Vendor yang peduli detail kencan impianmu</li>
-                <li>🎒 <strong>Praktis & Estetik</strong> – Datang & nikmati, kami urus semuanya</li>
-            </ul>
-        </div>
-
-        <div class="about-image">
-            <img src="../../assets/piknik date.jpg" alt="Tulip Project Picnic">
-        </div>
-
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
     </div>
-</section>
-
-<!-- MAP -->
-<section class="map">
-    <h2>📍 Lokasi</h2>
-    <p>Cirebon, Indonesia</p>
-
-    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3961.53836053651!2d108.61503457761557!3d-6.8258591507703095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e6f1bb6e7c2c683%3A0xb4a947c8101e411b!2sPerumahan%20BTN%20Sindanglaut%20indah!5e0!3m2!1sen!2sus!4v1766491858687!5m2!1sen!2sus" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-    © <?= date('Y') ?> Tulip.projectt | Penyewaan Peralatan Piknik
 </footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

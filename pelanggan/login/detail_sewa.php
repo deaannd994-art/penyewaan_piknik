@@ -11,7 +11,7 @@ if (!is_valid_uuid($id_transaksi)) {
     die("400 Bad Request: ID transaksi tidak valid.");
 }
 
-/* Cek keberadaan transaksi dan kepemilikan (OWASP A01: IDOR & Access Control Protection) */
+// OWASP A01: IDOR & Access Control Protection
 $checkTx = $pdo->prepare("SELECT id_user FROM transaksi WHERE id_transaksi = :id_tx LIMIT 1");
 $checkTx->execute(['id_tx' => $id_transaksi]);
 $txOwner = $checkTx->fetch();
@@ -27,7 +27,6 @@ if ($txOwner['id_user'] !== $id_user) {
     die("403 Forbidden: Anda tidak memiliki izin untuk mengakses data penyewaan milik pengguna lain.");
 }
 
-/* QUERY (IDOR Protected: Hanya transaksi milik user ini) */
 $stmt = $pdo->prepare("
     SELECT 
         t.id_transaksi,
@@ -64,94 +63,165 @@ if (empty($rows)) {
 
 $first = $rows[0];
 $buktiFile = $first['bukti_pembayaran'] ? basename($first['bukti_pembayaran']) : null;
-$buktiPath = $buktiFile ? "../../uploads/bukti/" . $buktiFile : null;
-$buktiExists = $buktiPath && file_exists(__DIR__ . '/' . $buktiPath);
+$buktiPath = $buktiFile ? "uploads/bukti/" . $buktiFile : null;
+$buktiExists = $buktiPath && file_exists(__DIR__ . '/../../' . $buktiPath);
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Detail Sewa</title>
-<link rel="stylesheet" href="../../assets/css/pelanggan.css">
-<link rel="stylesheet" href="../../assets/css/transaksi_sewa.css">
-<style>
-.img-bukti {
-    max-width: 300px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-}
-</style>
+    <meta charset="UTF-8">
+    <title>Rincian Pesanan #<?= SecurityHelper::e(substr($id_transaksi, 0, 8)) ?> - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php">Peralatan</a>
-        <a href="keranjang.php">Keranjang</a>
-        <a href="riwayat.php" class="active">Riwayat</a>
-        <a href="kontak.php">Kontak</a>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-        <div class="akun-wrapper">
-            <button class="btn-login"><?= e($nama) ?> ▾</button>
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
+
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link">Peralatan</a>
+            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link active">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link">Kontak</a>
+
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </header>
 
-<section class="checkout-page">
-<div class="checkout-wrapper">
-<div class="card">
+<main class="main-content">
+    <div class="container">
 
-<h3>Detail Penyewaan</h3>
+        <div class="mb-3 d-flex justify-between align-center">
+            <a href="riwayat.php" class="btn btn-outline btn-sm">← Kembali ke Riwayat</a>
+            <div>
+                <?php 
+                $st = strtolower($first['status']);
+                $stBadge = 'badge-warning';
+                if ($st === 'selesai' || $st === 'disetujui') $stBadge = 'badge-success';
+                if ($st === 'dibatalkan') $stBadge = 'badge-danger';
+                ?>
+                <span class="badge <?= $stBadge ?>">
+                    Status: <?= SecurityHelper::e(strtoupper($first['status'])) ?>
+                </span>
+            </div>
+        </div>
 
-<?php foreach ($rows as $item): ?>
-<div class="ringkasan-item">
-    <img src="../../uploads/peralatan/<?= e($item['gambar']) ?>" alt="<?= e($item['nama_peralatan']) ?>">
+        <div class="story-grid">
+            <!-- LEFT: DETAILS -->
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>📑</span> Informasi Transaksi #<?= SecurityHelper::e(substr($id_transaksi, 0, 8)) ?>
+                </h2>
 
-    <div>
-        <strong><?= e($item['nama_peralatan']) ?></strong><br>
-        Rp <?= number_format((float)$item['harga_sewa'], 0, ',', '.') ?> × <?= (int)$item['jumlah'] ?>
+                <div class="detail-specs">
+                    <div class="detail-spec-item">
+                        <span>Waktu Pesanan</span>
+                        <strong><?= SecurityHelper::e(date('d M Y, H:i', strtotime($first['tanggal_transaksi']))) ?> WIB</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Jadwal Sewa</span>
+                        <strong><?= SecurityHelper::e(date('d M Y', strtotime($first['tanggal_sewa']))) ?> s/d <?= SecurityHelper::e(date('d M Y', strtotime($first['tanggal_kembali']))) ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Metode Pembayaran</span>
+                        <strong><?= SecurityHelper::e($first['metode_pembayaran'] ?: 'Bayar di Tempat') ?></strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Alamat Pengiriman</span>
+                        <div class="text-right"><?= nl2br(SecurityHelper::e($first['alamat'])) ?></div>
+                    </div>
+                    <?php if (!empty($first['catatan'])): ?>
+                    <div class="detail-spec-item">
+                        <span>Catatan Khusus</span>
+                        <div class="text-right"><?= nl2br(SecurityHelper::e($first['catatan'])) ?></div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <h3 class="checkout-card-title mt-4">
+                    <span>🧺</span> Item Paket yang Disewa
+                </h3>
+
+                <ul class="order-review-list">
+                    <?php foreach ($rows as $item): ?>
+                    <li class="order-review-item">
+                        <div class="order-review-thumb">
+                            <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($item['gambar'])) ?>" 
+                                 alt="<?= SecurityHelper::e($item['nama_peralatan']) ?>">
+                        </div>
+                        <div class="order-review-details">
+                            <div class="order-review-title"><?= SecurityHelper::e($item['nama_peralatan']) ?></div>
+                            <div class="order-review-meta"><?= (int)$item['jumlah'] ?> unit × <?= SecurityHelper::rupiah($item['harga_sewa']) ?>/hari</div>
+                        </div>
+                        <div class="order-review-price">
+                            <?= SecurityHelper::rupiah($item['subtotal']) ?>
+                        </div>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+
+            <!-- RIGHT: PAYMENT PROOF & TOTAL -->
+            <div class="checkout-card">
+                <h2 class="checkout-card-title">
+                    <span>🧾</span> Ringkasan Pembayaran
+                </h2>
+
+                <div class="summary-row total-row mb-4">
+                    <span>Total Pembayaran:</span>
+                    <span><?= SecurityHelper::rupiah($first['total_harga']) ?></span>
+                </div>
+
+                <h3 class="checkout-card-title">
+                    <span>📸</span> Bukti Pembayaran
+                </h3>
+
+                <?php if ($buktiExists): ?>
+                    <div class="text-center mt-2">
+                        <img src="<?= app_path($buktiPath) ?>" alt="Bukti Pembayaran" class="img-bukti-card">
+                        <p class="text-xs text-muted mt-1">File: <?= SecurityHelper::e($buktiFile) ?></p>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <p class="text-muted text-sm">Tidak ada lampiran bukti transfer (atau memilih metode Bayar di Tempat/COD).</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
     </div>
+</main>
 
-    <strong>Rp <?= number_format((float)$item['subtotal'], 0, ',', '.') ?></strong>
-</div>
-<?php endforeach; ?>
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+    </div>
+</footer>
 
-<p><b>Tanggal Sewa :</b> <?= date('d-m-Y', strtotime($first['tanggal_sewa'])) ?></p>
-<p><b>Tanggal Kembali :</b> <?= date('d-m-Y', strtotime($first['tanggal_kembali'])) ?></p>
-<p><b>Alamat :</b> <?= e($first['alamat']) ?></p>
-<p><b>Catatan :</b> <?= e($first['catatan'] ?: 'Tidak ada catatan') ?></p>
-<p><b>Pembayaran :</b> <?= ucfirst(e($first['metode_pembayaran'])) ?></p>
-<p><b>Status :</b> <span class="status <?= strtolower(e($first['status'])) ?>"><?= ucfirst(e($first['status'])) ?></span></p>
-<p><b>Tanggal Transaksi :</b> <?= date('d-m-Y H:i', strtotime($first['tanggal_transaksi'])) ?></p>
-
-<hr>
-
-<h2 style="text-align:right;color:#d81b60">
-Total: Rp <?= number_format((float)$first['total_harga'], 0, ',', '.') ?>
-</h2>
-
-<!-- BUKTI PEMBAYARAN -->
-<div class="card" style="margin-top: 20px;">
-    <h3>Bukti Pembayaran</h3>
-
-    <?php if ($buktiExists): ?>
-        <img src="<?= e($buktiPath) ?>" alt="Bukti Pembayaran" class="img-bukti">
-    <?php else: ?>
-        <p><em>Bukti pembayaran belum diupload atau metode COD.</em></p>
-    <?php endif; ?>
-</div>
-
-<a href="riwayat.php" class="btn-kembali" style="display:inline-block; margin-top:20px;">← Kembali</a>
-
-</div>
-</div>
-</section>
-
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

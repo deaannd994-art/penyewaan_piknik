@@ -5,16 +5,12 @@ require_auth(['pelanggan'], app_path('auth/login_pelanggan.php'));
 $nama    = $_SESSION['nama'] ?? 'Pelanggan';
 $id_user = $_SESSION['id_user'];
 
-/* =======================
-   AMBIL ITEM CHECKOUT
-======================= */
 $items = $_POST['id_keranjang'] ?? [];
 
-// Dari GET (checkout langsung dari halaman detail atau sewa sekarang)
+// Direct checkout dari detail atau parameter GET
 if (isset($_GET['id'])) {
     $idPeralatan = $_GET['id'];
     if (is_valid_uuid($idPeralatan)) {
-        // Cek apakah sudah ada di keranjang
         $stmtCek = $pdo->prepare("SELECT id_keranjang FROM keranjang WHERE id_user = :id_user AND id_peralatan = :id_peralatan LIMIT 1");
         $stmtCek->execute(['id_user' => $id_user, 'id_peralatan' => $idPeralatan]);
         $row = $stmtCek->fetch();
@@ -22,7 +18,6 @@ if (isset($_GET['id'])) {
         if ($row) {
             $items = [$row['id_keranjang']];
         } else {
-            // Masukkan ke keranjang terlebih dahulu
             $newCartId = generate_uuid();
             $ins = $pdo->prepare("INSERT INTO keranjang (id_keranjang, id_user, id_peralatan, jumlah, created_at) VALUES (:id_k, :id_u, :id_p, 1, NOW())");
             $ins->execute([
@@ -35,12 +30,10 @@ if (isset($_GET['id'])) {
     }
 }
 
-// Normalisasi array
 if (!is_array($items)) {
     $items = strpos($items, ',') !== false ? explode(',', $items) : [$items];
 }
 
-// Filter hanya UUID yang valid
 $validItems = [];
 foreach ($items as $item) {
     $itemStr = trim((string)$item);
@@ -50,12 +43,10 @@ foreach ($items as $item) {
 }
 
 if (empty($validItems)) {
-    die("Keranjang sewa kosong atau pilihan item tidak valid. Silakan pilih item dari keranjang.");
+    header("Location: keranjang.php");
+    exit;
 }
 
-/* =======================
-   DATA PERALATAN (PDO Parameterized)
-======================= */
 $placeholders = implode(',', array_fill(0, count($validItems), '?'));
 $sql = "
     SELECT k.id_keranjang, k.jumlah, p.nama_peralatan, p.harga_sewa, p.gambar, p.stok, p.status
@@ -63,167 +54,223 @@ $sql = "
     JOIN peralatan p ON k.id_peralatan = p.id_peralatan
     WHERE k.id_user = ? AND k.id_keranjang IN ($placeholders)
 ";
-
 $stmt = $pdo->prepare($sql);
 $stmt->execute(array_merge([$id_user], $validItems));
 $cartList = $stmt->fetchAll();
 
 if (empty($cartList)) {
-    die("Tidak ada item yang dapat di-checkout.");
+    header("Location: keranjang.php");
+    exit;
 }
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Checkout</title>
-<link rel="stylesheet" href="../../assets/css/pelanggan.css">
-<link rel="stylesheet" href="../../assets/css/transaksi_sewa.css?v=2">
+    <meta charset="UTF-8">
+    <title>Checkout Sewa - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php">Peralatan</a>
-        <a href="keranjang.php" class="active">Keranjang</a>
-        <a href="riwayat.php">Riwayat</a>
-        <a href="kontak.php">Kontak</a>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-        <div class="akun-wrapper">
-            <button class="btn-login"><?= e($nama) ?> ▾</button>
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
+
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link">Peralatan</a>
+            <a href="keranjang.php" class="nav-link active">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link">Kontak</a>
+
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </header>
 
-<section class="checkout-page">
-<form action="proses_sewa.php" method="post" enctype="multipart/form-data">
-<?= csrf_field() ?>
+<main class="main-content">
+    <div class="container">
 
-<?php foreach ($validItems as $idk): ?>
-    <input type="hidden" name="id_keranjang[]" value="<?= e($idk) ?>">
-<?php endforeach; ?>
+        <div class="page-header">
+            <h1 class="page-title">💳 Checkout & Konfirmasi Sewa</h1>
+            <p class="page-subtitle">Lengkapi formulir jadwal sewa, alamat pengiriman, dan metode pembayaran.</p>
+        </div>
 
-<div class="checkout-wrapper">
+        <form action="proses_sewa.php" method="POST" enctype="multipart/form-data">
+            <?= SecurityHelper::csrfField() ?>
 
-<!-- DATA SEWA -->
-<div class="card">
-    <h3>Data Penyewaan</h3>
+            <?php foreach ($validItems as $idk): ?>
+                <input type="hidden" name="id_keranjang[]" value="<?= SecurityHelper::e($idk) ?>">
+            <?php endforeach; ?>
 
-    <div class="form-group">
-        <label>Tanggal Sewa</label>
-        <input type="date" name="tanggal_sewa" required min="<?= date('Y-m-d') ?>">
+            <!-- 2-COLUMN CHECKOUT GRID -->
+            <div class="checkout-grid">
+
+                <!-- LEFT COLUMN: Item Review & Form Data -->
+                <div>
+                    <!-- ORDER REVIEW -->
+                    <div class="checkout-card">
+                        <h2 class="checkout-card-title">
+                            <span>📦</span> Rincian Item Sewa
+                        </h2>
+
+                        <ul class="order-review-list">
+                            <?php 
+                            $subtotalPerHari = 0;
+                            foreach ($cartList as $row): 
+                                $itemSubtotal = (float)$row['harga_sewa'] * (int)$row['jumlah'];
+                                $subtotalPerHari += $itemSubtotal;
+                            ?>
+                            <li class="order-review-item">
+                                <div class="order-review-thumb">
+                                    <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($row['gambar'])) ?>" 
+                                         alt="<?= SecurityHelper::e($row['nama_peralatan']) ?>">
+                                </div>
+                                <div class="order-review-details">
+                                    <div class="order-review-title"><?= SecurityHelper::e($row['nama_peralatan']) ?></div>
+                                    <div class="order-review-meta">Jumlah: <?= (int)$row['jumlah'] ?> unit × <?= SecurityHelper::rupiah($row['harga_sewa']) ?>/hari</div>
+                                </div>
+                                <div class="order-review-price">
+                                    <?= SecurityHelper::rupiah($itemSubtotal) ?>
+                                </div>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+
+                    <!-- FORM DATA PENYEWAAN -->
+                    <div class="checkout-card">
+                        <h2 class="checkout-card-title">
+                            <span>📅</span> Jadwal & Informasi Pengiriman
+                        </h2>
+
+                        <div class="d-grid checkout-dates-grid">
+                            <div class="form-group">
+                                <label class="form-label" for="tglSewa">Tanggal Mulai Sewa</label>
+                                <input type="date" id="tglSewa" name="tanggal_sewa" class="form-control" 
+                                       required min="<?= date('Y-m-d') ?>">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="tglKembali">Tanggal Pengembalian</label>
+                                <input type="date" id="tglKembali" name="tanggal_kembali" class="form-control" 
+                                       required min="<?= date('Y-m-d') ?>">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="checkoutAlamat">Alamat Pengiriman / Pengambilan</label>
+                            <textarea id="checkoutAlamat" name="alamat" class="form-control" rows="3" 
+                                      required placeholder="Alamat lengkap tujuan pengiriman atau spot piknik..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="checkoutCatatan">Catatan Khusus (Opsional)</label>
+                            <textarea id="checkoutCatatan" name="catatan" class="form-control" rows="2" 
+                                      placeholder="Contoh: Titip di pos satpam atau waktu pengiriman pukul 09.00 WIB..."></textarea>
+                        </div>
+
+                        <h2 class="checkout-card-title mt-4">
+                            <span>💳</span> Metode Pembayaran
+                        </h2>
+
+                        <div class="form-group">
+                            <label class="form-label" for="metodePembayaran">Pilih Pembayaran</label>
+                            <select name="metode_pembayaran" id="metodePembayaran" class="form-control" required>
+                                <option value="">-- Pilih Rekening / Metode --</option>
+                                <option value="Transfer Bank">Transfer Bank (BCA / Mandiri / BRI)</option>
+                                <option value="E-Wallet">E-Wallet (GoPay / OVO / ShopeePay / Dana)</option>
+                                <option value="Bayar di Tempat">Bayar di Tempat (COD Saat Serah Terima)</option>
+                            </select>
+                        </div>
+
+                        <!-- UPLOAD BUKTI WITH REAL-TIME IMAGE PREVIEW -->
+                        <div class="form-group" id="buktiBox">
+                            <label class="form-label" for="buktiInput">
+                                Unggah Bukti Transfer (JPG/PNG, Maks. 2MB)
+                            </label>
+                            <input type="file" id="buktiInput" name="bukti_pembayaran" class="form-control" 
+                                   accept=".jpg,.jpeg,.png" data-preview="buktiPreviewContainer">
+                            
+                            <!-- Container Image Preview -->
+                            <div class="image-preview-wrapper" id="buktiPreviewContainer"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Sticky Order Summary -->
+                <div class="sticky-summary">
+                    <div class="checkout-card">
+                        <h2 class="checkout-card-title">
+                            <span>🧾</span> Ringkasan Tagihan
+                        </h2>
+
+                        <input type="hidden" id="subtotalPerHari" value="<?= (int)$subtotalPerHari ?>">
+                        <input type="hidden" name="total_harga" id="totalFinal" value="<?= (int)$subtotalPerHari ?>">
+                        <input type="hidden" name="durasi" id="durasiHari" value="1">
+
+                        <div class="summary-row">
+                            <span>Biaya Sewa / Hari:</span>
+                            <strong class="text-dark"><?= SecurityHelper::rupiah($subtotalPerHari) ?></strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Durasi Sewa:</span>
+                            <span id="checkoutDurasiInfo" class="text-bold text-muted">Pilih tanggal di formulir</span>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Biaya Layanan:</span>
+                            <span class="text-success text-bold">Gratis (Rp 0)</span>
+                        </div>
+
+                        <div class="summary-row total-row">
+                            <span>Total Biaya:</span>
+                            <span id="checkoutTotalHarga"><?= SecurityHelper::rupiah($subtotalPerHari) ?></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-full btn-lg mt-4">
+                            🔒 Konfirmasi & Sewa Sekarang
+                        </button>
+                        <p class="text-center text-xs text-muted mt-2">
+                            Pembayaran dienkripsi aman & tercatat di sistem audit Tulip.projectt
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+
     </div>
+</main>
 
-    <div class="form-group">
-        <label>Tanggal Kembali</label>
-        <input type="date" name="tanggal_kembali" required min="<?= date('Y-m-d') ?>">
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
     </div>
+</footer>
 
-    <div class="form-group">
-        <label>Alamat Lengkap Pengiriman / Pengambilan</label>
-        <textarea name="alamat" required rows="3"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label>Catatan (Opsional)</label>
-        <textarea name="catatan" rows="2"></textarea>
-    </div>
-
-    <h3>Pembayaran</h3>
-    <div class="form-group">
-        <label>Metode Pembayaran</label>
-        <select name="metode_pembayaran" id="metodePembayaran" required>
-            <option value="">-- Pilih Metode --</option>
-            <option value="Transfer Bank">Transfer Bank (BCA / Mandiri)</option>
-            <option value="E-Wallet">E-Wallet (GoPay / OVO / Dana)</option>
-            <option value="Bayar di Tempat">Bayar di Tempat (COD)</option>
-        </select>
-    </div>
-
-    <div class="form-group upload-box" id="buktiBox">
-        <label>Bukti Pembayaran (JPG/PNG, Max 2MB)</label>
-        <input type="file" name="bukti_pembayaran" accept=".jpg,.jpeg,.png">
-    </div>
-</div>
-
-<!-- RINGKASAN -->
-<div class="card">
-    <h3>Ringkasan Pesanan</h3>
-
-    <?php
-    $subtotalPerHari = 0;
-    foreach ($cartList as $row):
-        $itemTotal = (int)$row['harga_sewa'] * (int)$row['jumlah'];
-        $subtotalPerHari += $itemTotal;
-    ?>
-    <div class="ringkasan-item">
-        <img src="../../uploads/peralatan/<?= e($row['gambar']) ?>" alt="<?= e($row['nama_peralatan']) ?>">
-        <span><?= e($row['nama_peralatan']) ?> × <?= (int)$row['jumlah'] ?></span>
-        <strong>Rp <?= number_format($itemTotal, 0, ',', '.') ?></strong>
-    </div>
-    <?php endforeach; ?>
-
-    <input type="hidden" id="subtotalPerHari" value="<?= $subtotalPerHari ?>">
-    <input type="hidden" name="total_harga" id="totalFinal">
-    <input type="hidden" name="durasi" id="durasiHari">
-
-    <div class="ringkasan-total">
-        <p>Biaya Sewa / Hari</p>
-        <h2 id="totalHarga">Rp <?= number_format($subtotalPerHari, 0, ',', '.') ?></h2>
-        <p id="durasiInfo">Pilih tanggal sewa dan kembali</p>
-    </div>
-
-    <button type="submit" class="btn-checkout">Konfirmasi Sewa</button>
-</div>
-
-</div>
-</form>
-</section>
-
-<script>
-function hitungTotalCheckout() {
-    const tglSewa = document.querySelector('[name="tanggal_sewa"]').value;
-    const tglKembali = document.querySelector('[name="tanggal_kembali"]').value;
-    const subtotal = parseInt(document.getElementById('subtotalPerHari').value) || 0;
-
-    if (!tglSewa || !tglKembali) return;
-
-    const start = new Date(tglSewa);
-    const end = new Date(tglKembali);
-    const diffTime = end - start;
-    const durasi = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    if (durasi <= 0) {
-        document.getElementById('durasiInfo').innerText = 'Tanggal kembali tidak boleh sebelum tanggal sewa!';
-        document.getElementById('durasiInfo').style.color = 'red';
-        return;
-    }
-
-    document.getElementById('durasiInfo').style.color = '#555';
-    const total = subtotal * durasi;
-    document.getElementById('totalHarga').innerText =
-        'Rp ' + total.toLocaleString('id-ID');
-    document.getElementById('durasiInfo').innerText =
-        'Durasi sewa: ' + durasi + ' hari';
-
-    document.getElementById('totalFinal').value = total;
-    document.getElementById('durasiHari').value = durasi;
-}
-
-document.querySelector('[name="tanggal_sewa"]').addEventListener('change', hitungTotalCheckout);
-document.querySelector('[name="tanggal_kembali"]').addEventListener('change', hitungTotalCheckout);
-
-document.getElementById('metodePembayaran').addEventListener('change', function(){
-    document.getElementById('buktiBox').style.display =
-        this.value === 'Bayar di Tempat' ? 'none' : 'block';
-});
-</script>
-
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

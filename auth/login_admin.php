@@ -5,7 +5,7 @@ init_secure_session();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -23,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && verify_password_peppered($password, $user['password'])) {
-            // Anti-Session Fixation
             session_regenerate_id(true);
 
             $_SESSION['login']   = true;
@@ -54,35 +53,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Login Staf & Owner</title>
-    <link rel="stylesheet" href="../assets/css/auth.css">
+    <title>Login Internal Staf - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<div class="auth-container">
-    <h2>Login Internal Staf
-        <br>🧺 Tulip.projectt
-    </h2>
-
-    <?php if ($error): ?>
-        <p style="color:red; text-align:center;"><?= e($error) ?></p>
-    <?php endif; ?>
-
-    <form method="POST">
-        <?= csrf_field() ?>
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required autofocus>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-brand">
+                <span>🧺</span> Tulip.projectt
+                <span class="brand-badge">Internal</span>
+            </div>
+            <h1 class="auth-title">Portal Admin & Owner</h1>
+            <p class="auth-subtitle">Akses manajemen operasional, laporan keuangan, dan security audit.</p>
         </div>
 
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" name="password" required>
-        </div>
+        <?php if ($error): ?>
+            <div class="alert alert-danger">
+                <span>⚠️</span>
+                <div><?= SecurityHelper::e($error) ?></div>
+            </div>
+        <?php endif; ?>
 
-        <button type="submit" class="btn">Login</button>
-    </form>
+        <form method="POST">
+            <?= SecurityHelper::csrfField() ?>
+
+            <div class="form-group">
+                <label class="form-label" for="adminEmail">Email Staf</label>
+                <input type="email" id="adminEmail" name="email" class="form-control" 
+                       value="<?= SecurityHelper::e($_POST['email'] ?? '') ?>" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="adminPassword">Password</label>
+                <div class="password-field-wrapper">
+                    <input type="password" id="adminPassword" name="password" class="form-control" required>
+                    <button type="button" class="btn-toggle-password" data-target="adminPassword" aria-label="Lihat Password">
+                        👁️‍🗨️
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full btn-lg mt-3">
+                Masuk ke Portal
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <a href="<?= app_path('pelanggan/dashboard.php') ?>" class="text-sm text-muted">← Kembali ke Beranda</a>
+        </div>
+    </div>
 </div>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

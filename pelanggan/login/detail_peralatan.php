@@ -23,80 +23,113 @@ if (!$data) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title><?= e($data['nama_peralatan']) ?></title>
-<link rel="stylesheet" href="../../assets/css/pelanggan.css">
+    <meta charset="UTF-8">
+    <title><?= SecurityHelper::e($data['nama_peralatan']) ?> - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php" class="active">Peralatan</a>
-        <a href="keranjang.php">Keranjang</a>
-        <a href="riwayat.php">Riwayat</a>
-        <a href="kontak.php">Kontak</a>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-        <div class="akun-wrapper">
-            <button class="btn-login">
-                <?= e($nama) ?> ▾
-            </button>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
 
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
-            </div>
-        </div>
-    </nav>
-</header>
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link active">Peralatan</a>
+            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link">Kontak</a>
 
-<main class="page-content">
-    <div class="detail-container">
-
-        <section class="detail-peralatan">
-
-            <img src="../../uploads/peralatan/<?= e($data['gambar']) ?>" alt="<?= e($data['nama_peralatan']) ?>" class="detail-img">
-
-            <div class="detail-info">
-
-                <h1><?= e($data['nama_peralatan']) ?></h1>
-
-                <p class="harga">
-                    Rp <?= number_format((float)$data['harga_sewa'], 0, ',', '.') ?> / hari
-                </p>
-
-                <p class="deskripsi">
-                    <?= nl2br(e($data['deskripsi'])) ?>
-                </p>
-
-                <div class="detail-bottom">
-
-                    <div class="detail-actions">
-                        <a href="tambah_keranjang.php?id=<?= urlencode($data['id_peralatan']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>" class="btn-login">
-                            + Keranjang
-                        </a>
-
-                        <a href="checkout.php?id=<?= urlencode($data['id_peralatan']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>" class="btn-login">
-                            Sewa Sekarang
-                        </a>
-                    </div>
-
-                    <a href="peralatan.php" class="btn-kembali">
-                        ← Kembali
-                    </a>
-
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
                 </div>
             </div>
+        </nav>
+    </div>
+</header>
 
-        </section>
+<main class="main-content">
+    <div class="container">
+
+        <div class="mb-3">
+            <a href="peralatan.php" class="btn btn-outline btn-sm">← Kembali ke Katalog</a>
+        </div>
+
+        <div class="detail-layout">
+            <div class="detail-gallery">
+                <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($data['gambar'])) ?>" 
+                     alt="<?= SecurityHelper::e($data['nama_peralatan']) ?>">
+            </div>
+
+            <div class="detail-info">
+                <div class="mb-2">
+                    <?php if ($data['status'] === 'tersedia' && (int)$data['stok'] > 0): ?>
+                        <span class="badge badge-success">Stok Tersedia (<?= (int)$data['stok'] ?> Unit)</span>
+                    <?php else: ?>
+                        <span class="badge badge-danger">Stok Sedang Habis</span>
+                    <?php endif; ?>
+                </div>
+
+                <h1 class="detail-title"><?= SecurityHelper::e($data['nama_peralatan']) ?></h1>
+                <div class="detail-price"><?= SecurityHelper::rupiah($data['harga_sewa']) ?> <span class="text-muted text-sm">/ hari</span></div>
+
+                <div class="card-desc mb-3">
+                    <?= nl2br(SecurityHelper::e($data['deskripsi'])) ?>
+                </div>
+
+                <div class="detail-specs">
+                    <div class="detail-spec-item">
+                        <span>Kategori Paket</span>
+                        <strong>Set Piknik Lengkap</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Kondisi Peralatan</span>
+                        <strong>Bersih, Higienis & Siap Pakai</strong>
+                    </div>
+                    <div class="detail-spec-item">
+                        <span>Durasi Minimal Sewa</span>
+                        <strong>1 Hari (24 Jam)</strong>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <a href="tambah_keranjang.php?id=<?= urlencode($data['id_peralatan']) ?>&csrf=<?= urlencode(SecurityHelper::csrfToken()) ?>" class="btn btn-outline btn-lg btn-full">
+                        + Keranjang
+                    </a>
+                    <a href="checkout.php?id=<?= urlencode($data['id_peralatan']) ?>" class="btn btn-primary btn-lg btn-full">
+                        🧺 Sewa Sekarang
+                    </a>
+                </div>
+            </div>
+        </div>
 
     </div>
 </main>
 
-<footer class="footer">
-    © <?= date('Y') ?> Tulip.projectt
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+    </div>
 </footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

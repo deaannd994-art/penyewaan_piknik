@@ -4,7 +4,7 @@ require_auth(['pelanggan'], app_path('auth/login_pelanggan.php'));
 
 $nama    = $_SESSION['nama'] ?? 'Pelanggan';
 $id_user = $_SESSION['id_user'];
-$csrf    = get_csrf_token();
+$csrf    = SecurityHelper::csrfToken();
 
 $stmt = $pdo->prepare("
     SELECT 
@@ -26,130 +26,157 @@ $items = $stmt->fetchAll();
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Keranjang Sewa</title>
-<link rel="stylesheet" href="../../assets/css/pelanggan.css">
-<link rel="stylesheet" href="../../assets/css/transaksi_sewa.css">
-
-<script>
-function hitungTotal() {
-    let total = 0;
-
-    document.querySelectorAll('.check-item:checked').forEach(el => {
-        let harga  = parseInt(el.dataset.harga) || 0;
-        let jumlah = parseInt(el.dataset.jumlah) || 0;
-        total += harga * jumlah;
-    });
-
-    document.getElementById('totalHarga').innerText =
-        'Rp ' + total.toLocaleString('id-ID');
-}
-</script>
+    <meta charset="UTF-8">
+    <title>Keranjang Sewa - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
-
 <body>
 
-<header class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <nav class="nav">
-        <a href="dashboard.php">Home</a>
-        <a href="peralatan.php">Peralatan</a>
-        <a href="keranjang.php" class="active">Keranjang</a>
-        <a href="riwayat.php">Riwayat</a>
-        <a href="kontak.php">Kontak</a>
+<!-- NAVBAR -->
+<header class="site-header">
+    <div class="nav-container">
+        <a href="dashboard.php" class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+        </a>
 
-        <div class="akun-wrapper">
-            <button class="btn-login">
-                <?= e($nama) ?> ▾
-            </button>
+        <button class="nav-toggle" aria-label="Toggle Menu" aria-expanded="false">
+            ☰
+        </button>
 
-            <div class="akun-menu">
-                <a href="akun_saya.php">Akun Saya</a>
-                <a href="../../auth/logout_pelanggan.php">Logout</a>
+        <nav class="nav-menu">
+            <a href="dashboard.php" class="nav-link">Home</a>
+            <a href="peralatan.php" class="nav-link">Peralatan</a>
+            <a href="keranjang.php" class="nav-link active">🛒 Keranjang</a>
+            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="kontak.php" class="nav-link">Kontak</a>
+
+            <div class="user-dropdown">
+                <button type="button" class="user-dropdown-btn">
+                    <span>👤</span>
+                    <span><?= SecurityHelper::e($nama) ?></span>
+                    <span>▾</span>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="akun_saya.php" class="user-dropdown-item">⚙️ Akun Saya</a>
+                    <a href="riwayat.php" class="user-dropdown-item">📜 Riwayat Sewa</a>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="<?= app_path('auth/logout_pelanggan.php') ?>" class="user-dropdown-item text-danger">🚪 Logout</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </div>
 </header>
 
-<section class="page-title">
-    <h1>🛒 Keranjang Sewa</h1>
-    <p>Barang Pilihanmu, Jangan lupa disewa!!</p>
-</section>
+<main class="main-content">
+    <div class="container">
 
-<form action="checkout.php" method="post">
-<?= csrf_field() ?>
-
-<div class="cart-list">
-
-<?php if (empty($items)): ?>
-    <div style="text-align: center; padding: 40px; color: #666;">
-        <p>Keranjang belanja Anda masih kosong.</p>
-        <a href="peralatan.php" class="btn-primary" style="display:inline-block; margin-top:10px;">Lihat Peralatan</a>
-    </div>
-<?php else: ?>
-    <?php foreach ($items as $row): ?>
-    <div class="cart-item <?= $row['stok'] <= 0 ? 'disabled' : '' ?>">
-
-        <input type="checkbox"
-               name="id_keranjang[]"
-               value="<?= e($row['id_keranjang']) ?>"
-               data-harga="<?= (int)$row['harga_sewa'] ?>"
-               data-jumlah="<?= (int)$row['jumlah'] ?>"
-               class="check-item"
-               onchange="hitungTotal()"
-               <?= ($row['status_peralatan'] !== 'tersedia' || (int)$row['stok'] <= 0) ? 'disabled' : '' ?>>
-
-        <img src="../../uploads/peralatan/<?= e($row['gambar']) ?>" alt="<?= e($row['nama_peralatan']) ?>" class="cart-img">
-
-        <div class="cart-info">
-            <h4><?= e($row['nama_peralatan']) ?></h4>
-            <p class="price">Rp <?= number_format((float)$row['harga_sewa'], 0, ',', '.') ?></p>
-
-            <?php if ($row['status_peralatan'] === 'tersedia' && (int)$row['stok'] > 0): ?>
-                <span class="badge available">Tersedia (Sisa: <?= (int)$row['stok'] ?>)</span>
-            <?php else: ?>
-                <span class="badge empty">Tidak Tersedia</span>
-            <?php endif; ?>
+        <div class="page-header">
+            <h1 class="page-title">🛒 Keranjang Sewa Peralatan</h1>
+            <p class="page-subtitle">Periksa paket pilihanmu, atur jumlah sewa, dan lanjutkan ke pembayaran.</p>
         </div>
 
-        <div class="cart-qty">
-        <?php if ((int)$row['stok'] > 0 && $row['status_peralatan'] === 'tersedia'): ?>
-            <a href="update_qty.php?id=<?= urlencode($row['id_keranjang']) ?>&type=minus&csrf=<?= urlencode($csrf) ?>">−</a>
-            <span style="display:inline-block; min-width:30px; text-align:center; font-weight:bold;"><?= (int)$row['jumlah'] ?></span>
-            <a href="update_qty.php?id=<?= urlencode($row['id_keranjang']) ?>&type=plus&csrf=<?= urlencode($csrf) ?>">+</a>
+        <?php if (empty($items)): ?>
+            <div class="empty-state">
+                <div class="empty-state-icon">🧺</div>
+                <h3 class="empty-state-title">Keranjang Sewa Masih Kosong</h3>
+                <p class="empty-state-desc">Kamu belum menambahkan paket piknik ke dalam keranjang. Yuk jelajahi katalog dan pilih set impianmu!</p>
+                <a href="peralatan.php" class="btn btn-primary btn-lg cart-empty-btn">
+                    Jelajahi Katalog Piknik
+                </a>
+            </div>
         <?php else: ?>
-            <span class="stok-habis">Habis</span>
+            <form action="checkout.php" method="POST">
+                <?= SecurityHelper::csrfField() ?>
+
+                <div class="catalog-filter-card mb-3">
+                    <label class="d-flex align-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="selectAllCart" class="cart-checkbox">
+                        <span class="text-bold text-sm">Pilih Semua Item untuk Checkout</span>
+                    </label>
+                </div>
+
+                <div class="cart-layout">
+                    <?php foreach ($items as $row): 
+                        $isAvailable = ($row['status_peralatan'] === 'tersedia' && (int)$row['stok'] > 0);
+                        $itemSubtotal = (float)$row['harga_sewa'] * (int)$row['jumlah'];
+                    ?>
+                    <div class="cart-item <?= !$isAvailable ? 'disabled' : '' ?>">
+                        <input type="checkbox"
+                               name="id_keranjang[]"
+                               value="<?= SecurityHelper::e($row['id_keranjang']) ?>"
+                               data-harga="<?= (int)$row['harga_sewa'] ?>"
+                               data-jumlah="<?= (int)$row['jumlah'] ?>"
+                               class="cart-checkbox"
+                               <?= !$isAvailable ? 'disabled' : 'checked' ?>>
+
+                        <div class="cart-thumb">
+                            <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($row['gambar'])) ?>" 
+                                 alt="<?= SecurityHelper::e($row['nama_peralatan']) ?>">
+                        </div>
+
+                        <div class="cart-info">
+                            <h4><?= SecurityHelper::e($row['nama_peralatan']) ?></h4>
+                            <div class="unit-price"><?= SecurityHelper::rupiah($row['harga_sewa']) ?> / hari</div>
+                            <div class="mt-1">
+                                <?php if ($isAvailable): ?>
+                                    <span class="badge badge-success">Tersedia (Sisa: <?= (int)$row['stok'] ?>)</span>
+                                <?php else: ?>
+                                    <span class="badge badge-danger">Stok Habis / Tidak Tersedia</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <div>
+                            <?php if ($isAvailable): ?>
+                                <div class="qty-stepper">
+                                    <a href="update_qty.php?id=<?= urlencode($row['id_keranjang']) ?>&type=minus&csrf=<?= urlencode($csrf) ?>" 
+                                       class="qty-btn" aria-label="Kurangi">−</a>
+                                    <span class="qty-display"><?= (int)$row['jumlah'] ?></span>
+                                    <a href="update_qty.php?id=<?= urlencode($row['id_keranjang']) ?>&type=plus&csrf=<?= urlencode($csrf) ?>" 
+                                       class="qty-btn" aria-label="Tambah">+</a>
+                                </div>
+                            <?php else: ?>
+                                <span class="badge badge-danger">Habis</span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="cart-subtotal-col">
+                            <span class="text-xs text-muted">Subtotal per hari:</span>
+                            <div class="cart-subtotal-price"><?= SecurityHelper::rupiah($itemSubtotal) ?></div>
+                            <a href="hapus_keranjang.php?id=<?= urlencode($row['id_keranjang']) ?>&csrf=<?= urlencode($csrf) ?>" 
+                               class="btn btn-outline-danger btn-sm mt-1">
+                                🗑️ Hapus
+                            </a>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- BOTTOM SUMMARY BAR -->
+                <div class="catalog-filter-card mt-4 d-flex justify-between align-center">
+                    <div>
+                        <span class="text-muted text-sm">Estimasi Biaya Sewa / Hari:</span>
+                        <div class="price-tag" id="totalHargaKeranjang">Rp 0</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Lanjut ke Checkout Pesanan →
+                    </button>
+                </div>
+            </form>
         <?php endif; ?>
-        </div>
 
-        <div class="cart-subtotal">
-            Rp <?= number_format((float)($row['harga_sewa'] * $row['jumlah']), 0, ',', '.') ?>
-            <a href="hapus_keranjang.php?id=<?= urlencode($row['id_keranjang']) ?>&csrf=<?= urlencode($csrf) ?>" class="hapus" 
-               onclick="return confirm('Hapus item ini dari keranjang?')">🗑</a>
-        </div>
-       
     </div>
-    <?php endforeach; ?>
-<?php endif; ?>
+</main>
 
-</div>
-
-<?php if (!empty($items)): ?>
-<div class="cart-summary bottom">
-    <span>Total Sewa</span>
-    <strong id="totalHarga">Rp 0</strong>
-
-    <button type="submit" class="btn-primary">
-        Checkout
-    </button>
-</div>
-<?php endif; ?>
-
-</form>
-
-<footer class="footer">
-    © <?= date('Y') ?> Tulip.projectt | Penyewaan Peralatan Piknik
+<footer class="site-footer">
+    <div class="container">
+        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+    </div>
 </footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

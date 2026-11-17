@@ -23,7 +23,7 @@ $stmt = $pdo->query("
 ");
 $laporan = $stmt->fetchAll();
 
-// Fitur Ekspor Laporan CSV (Memenuhi Kelengkapan Fitur Minimum A.3)
+// Fitur Ekspor Laporan CSV
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="laporan_transaksi_' . date('Ymd_His') . '.csv"');
@@ -54,110 +54,129 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Owner | Laporan Transaksi</title>
-    <link rel="stylesheet" href="../assets/css/admin.css">
-    <style>
-        .img-thumb {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-        }
-    </style>
+    <title>Laporan Transaksi - Owner Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Owner | Penyewaan Peralatan Piknik</div>
-    <a href="../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <a href="dashboard.php">🏠 Dashboard</a>
-        <a href="data_peralatan.php">🧺 Data Peralatan</a>
-        <a href="laporan_transaksi.php" class="active">📑 Data Transaksi</a>
-        <a href="data_users.php">👤 Data Users</a>
-    </div>
-
-    <!-- CONTENT -->
-    <div class="content">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0;">📑 Laporan Transaksi</h3>
-                <a href="?export=csv" class="btn-sm" style="background:#2e7d32; color:#fff; text-decoration:none; padding:8px 16px; border-radius:6px; font-weight:bold; display:inline-flex; align-items:center; gap:6px;">📥 Ekspor CSV</a>
-            </div>
-
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Tanggal</th>
-                        <th>Penyewa</th>
-                        <th>Gambar</th>
-                        <th>Peralatan</th>
-                        <th>Qty</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php
-                $no = 1;
-                foreach ($laporan as $row):
-                    $badge = match ($row['status']) {
-                        'menunggu'   => 'warning',
-                        'diproses'   => 'secondary',
-                        'disetujui'  => 'info',
-                        'selesai'    => 'success',
-                        'dibatalkan' => 'danger',
-                        default      => 'secondary'
-                    };
-                    $gambar = $row['gambar']
-                        ? "../uploads/peralatan/" . $row['gambar']
-                        : "../assets/img/no-image.png";
-                ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td><?= date('d-m-Y', strtotime($row['tanggal_transaksi'])) ?></td>
-                        <td><?= e($row['nama']) ?></td>
-                        <td align="center">
-                            <img src="<?= e($gambar) ?>" class="img-thumb">
-                        </td>
-                        <td><?= e($row['nama_peralatan']) ?></td>
-                        <td><?= e((string)$row['jumlah']) ?></td>
-                        <td>Rp <?= number_format($row['subtotal'], 0, ',', '.') ?></td>
-                        <td>
-                            <span class="badge <?= $badge ?>">
-                                <?= ucfirst(e($row['status'])) ?>
-                            </span>
-                        </td>
-                        <td>
-                            <a href="detail_transaksi.php?id=<?= urlencode($row['id_transaksi']) ?>" class="btn-sm logout">
-                                Detail
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-
-            <?php if (empty($laporan)): ?>
-                <p><em>Belum ada transaksi recorded.</em></p>
-            <?php endif; ?>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Owner Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">👑 <?= SecurityHelper::e($_SESSION['nama'] ?? 'Owner') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
         </div>
     </div>
+</header>
+
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="data_peralatan.php" class="sidebar-nav-item">
+            <span>🧺</span> Data Peralatan
+        </a>
+        <a href="laporan_transaksi.php" class="sidebar-nav-item active">
+            <span>📑</span> Laporan Transaksi
+        </a>
+        <a href="data_users.php" class="sidebar-nav-item">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan Sistem</div>
+        <a href="audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="dashboard-main">
+        <div class="page-header d-flex justify-between align-center">
+            <div>
+                <h1 class="page-title">📑 Laporan Transaksi Penyewaan</h1>
+                <p class="page-subtitle">Rekapitulasi lengkap seluruh penyewaan peralatan piknik.</p>
+            </div>
+            <a href="?export=csv" class="btn btn-success">
+                📥 Ekspor Data (CSV)
+            </a>
+        </div>
+
+        <div class="checkout-card">
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal Transaksi</th>
+                            <th>Penyewa</th>
+                            <th>Gambar</th>
+                            <th>Peralatan</th>
+                            <th>Jumlah</th>
+                            <th>Total Biaya</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($laporan)): ?>
+                            <tr>
+                                <td colspan="9" class="text-center text-muted">Belum ada transaksi recorded.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php
+                            $no = 1;
+                            foreach ($laporan as $row):
+                                $st = strtolower($row['status']);
+                                $bClass = 'badge-warning';
+                                if ($st === 'selesai' || $st === 'disetujui') $bClass = 'badge-success';
+                                if ($st === 'dibatalkan') $bClass = 'badge-danger';
+
+                                $gambar = $row['gambar']
+                                    ? app_path("uploads/peralatan/" . SecurityHelper::e($row['gambar']))
+                                    : app_path("assets/img/no-image.png");
+                            ?>
+                            <tr>
+                                <td class="text-muted"><?= $no++ ?></td>
+                                <td class="cell-nowrap"><?= SecurityHelper::e(date('d M Y, H:i', strtotime($row['tanggal_transaksi']))) ?></td>
+                                <td><strong><?= SecurityHelper::e($row['nama']) ?></strong></td>
+                                <td class="text-center">
+                                    <img src="<?= $gambar ?>" class="img-product-table" alt="Item">
+                                </td>
+                                <td><?= SecurityHelper::e($row['nama_peralatan']) ?></td>
+                                <td class="text-bold"><?= (int)$row['jumlah'] ?> unit</td>
+                                <td class="text-bold text-primary"><?= SecurityHelper::rupiah($row['subtotal']) ?></td>
+                                <td>
+                                    <span class="badge <?= $bClass ?>">
+                                        <?= strtoupper(SecurityHelper::e($row['status'])) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="detail_transaksi.php?id=<?= urlencode($row['id_transaksi']) ?>" class="btn btn-outline btn-sm">
+                                        Rincian
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-    © <?= date('Y') ?> Owner | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

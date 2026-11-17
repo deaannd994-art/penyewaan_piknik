@@ -14,70 +14,100 @@ $users = $stmt->fetchAll();
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Owner | Data Users</title>
-    <link rel="stylesheet" href="../assets/css/admin.css">
+    <title>Data Pelanggan - Owner Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Owner | Penyewaan Peralatan Piknik</div>
-    <a href="../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <a href="dashboard.php">🏠 Dashboard</a>
-        <a href="data_peralatan.php">🧺 Data Peralatan</a>
-        <a href="laporan_transaksi.php">📑 Data Transaksi</a>
-        <a href="data_users.php" class="active">👤 Data Users</a>
-    </div>
-
-    <!-- CONTENT -->
-    <div class="content">
-        <div class="card">
-            <h3>📋 Data Pelanggan</h3>
-
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama</th>
-                        <th>Email</th>
-                        <th>No HP</th>
-                        <th>Alamat</th>
-                        <th>Tanggal Daftar</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php $no = 1; foreach ($users as $row): ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td><?= e($row['nama']) ?></td>
-                        <td><?= e($row['email']) ?></td>
-                        <td><?= e($row['no_hp'] ?? '-') ?></td>
-                        <td><?= e($row['alamat'] ?? '-') ?></td>
-                        <td><?= date('d-m-Y', strtotime($row['created_at'])) ?></td>
-                        <td>
-                            <a href="detail_users.php?id=<?= urlencode($row['id_user']) ?>" class="btn-sm logout">
-                                Detail
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Owner Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">👑 <?= SecurityHelper::e($_SESSION['nama'] ?? 'Owner') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
         </div>
     </div>
+</header>
+
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="data_peralatan.php" class="sidebar-nav-item">
+            <span>🧺</span> Data Peralatan
+        </a>
+        <a href="laporan_transaksi.php" class="sidebar-nav-item">
+            <span>📑</span> Laporan Transaksi
+        </a>
+        <a href="data_users.php" class="sidebar-nav-item active">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan Sistem</div>
+        <a href="audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="dashboard-main">
+        <div class="page-header">
+            <h1 class="page-title">👤 Data Pelanggan Terdaftar</h1>
+            <p class="page-subtitle">Informasi profil pelanggan dan akses riwayat penyewaan masing-masing pelanggan.</p>
+        </div>
+
+        <div class="checkout-card">
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Lengkap</th>
+                            <th>Email</th>
+                            <th>No HP / WhatsApp</th>
+                            <th>Alamat Domisili</th>
+                            <th>Tanggal Terdaftar</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $no = 1; 
+                        foreach ($users as $row): 
+                        ?>
+                        <tr>
+                            <td class="text-muted"><?= $no++ ?></td>
+                            <td><strong><?= SecurityHelper::e($row['nama']) ?></strong></td>
+                            <td><?= SecurityHelper::e($row['email']) ?></td>
+                            <td><?= SecurityHelper::e($row['no_hp'] ?: '-') ?></td>
+                            <td class="cell-details"><?= SecurityHelper::e($row['alamat'] ?: '-') ?></td>
+                            <td class="cell-nowrap"><?= SecurityHelper::e(date('d M Y', strtotime($row['created_at']))) ?></td>
+                            <td>
+                                <a href="detail_users.php?id=<?= urlencode($row['id_user']) ?>" class="btn btn-outline btn-sm">
+                                    Detail Profil
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-    © <?= date('Y') ?> Owner | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

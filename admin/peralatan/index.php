@@ -12,7 +12,7 @@ if (isset($_GET['toggle_status'])) {
     $id = $_GET['toggle_status'];
     $csrf = $_GET['csrf'] ?? '';
 
-    if (verify_csrf_token($csrf) && is_valid_uuid($id)) {
+    if (SecurityHelper::verifyCsrf($csrf) && is_valid_uuid($id)) {
         $stmt = $pdo->prepare("SELECT status FROM peralatan WHERE id_peralatan = :id LIMIT 1");
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
@@ -33,7 +33,7 @@ if (isset($_GET['toggle_status'])) {
    TAMBAH & UPDATE
 ======================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $aksi      = $_POST['aksi'];
     $nama      = trim($_POST['nama_peralatan'] ?? '');
@@ -78,64 +78,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
         }
 
         if (empty($error)) {
-            /* TAMBAH DATA (Generate UUID v4) */
             if ($aksi === 'tambah') {
                 $newId = generate_uuid();
-                $status = 'tersedia';
-
-                $stmt = $pdo->prepare("
-                    INSERT INTO peralatan (id_peralatan, nama_peralatan, deskripsi, gambar, harga_sewa, stok, status)
-                    VALUES (:id, :nama, :deskripsi, :gambar, :harga, :stok, :status)
+                $stmtIns = $pdo->prepare("
+                    INSERT INTO peralatan (id_peralatan, nama_peralatan, deskripsi, harga_sewa, stok, status, gambar)
+                    VALUES (:id, :nama, :deskripsi, :harga, :stok, 'tersedia', :gambar)
                 ");
-                $stmt->execute([
+                $stmtIns->execute([
                     'id'        => $newId,
                     'nama'      => $nama,
                     'deskripsi' => $deskripsi,
-                    'gambar'    => $gambarName,
                     'harga'     => $harga,
                     'stok'      => $stok,
-                    'status'    => $status
+                    'gambar'    => $gambarName ?? 'default.jpg'
                 ]);
 
-                log_audit($pdo, $_SESSION['id_user'], 'CREATE_PERALATAN', 'peralatan', 'success', "ID: {$newId}, Nama: {$nama}");
+                log_audit($pdo, $_SESSION['id_user'], 'CREATE_PERALATAN', 'peralatan', 'success', "ID: {$newId}");
                 header("Location: index.php");
                 exit;
-            }
-
-            /* UPDATE DATA */
-            if ($aksi === 'update') {
+            } elseif ($aksi === 'update') {
                 $id = $_POST['id_peralatan'] ?? '';
                 if (!is_valid_uuid($id)) {
-                    $error = "ID Peralatan tidak valid!";
+                    $error = "ID peralatan tidak valid!";
                 } else {
                     if ($gambarName) {
-                        $stmt = $pdo->prepare("
-                            UPDATE peralatan SET
-                                nama_peralatan = :nama,
-                                deskripsi      = :deskripsi,
-                                gambar         = :gambar,
-                                harga_sewa     = :harga,
-                                stok           = :stok
+                        $stmtUp = $pdo->prepare("
+                            UPDATE peralatan 
+                            SET nama_peralatan = :nama, deskripsi = :deskripsi, harga_sewa = :harga, stok = :stok, gambar = :gambar
                             WHERE id_peralatan = :id
                         ");
-                        $stmt->execute([
+                        $stmtUp->execute([
                             'nama'      => $nama,
                             'deskripsi' => $deskripsi,
-                            'gambar'    => $gambarName,
                             'harga'     => $harga,
                             'stok'      => $stok,
+                            'gambar'    => $gambarName,
                             'id'        => $id
                         ]);
                     } else {
-                        $stmt = $pdo->prepare("
-                            UPDATE peralatan SET
-                                nama_peralatan = :nama,
-                                deskripsi      = :deskripsi,
-                                harga_sewa     = :harga,
-                                stok           = :stok
+                        $stmtUp = $pdo->prepare("
+                            UPDATE peralatan 
+                            SET nama_peralatan = :nama, deskripsi = :deskripsi, harga_sewa = :harga, stok = :stok
                             WHERE id_peralatan = :id
                         ");
-                        $stmt->execute([
+                        $stmtUp->execute([
                             'nama'      => $nama,
                             'deskripsi' => $deskripsi,
                             'harga'     => $harga,
@@ -160,7 +146,7 @@ if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     $csrf = $_GET['csrf'] ?? '';
 
-    if (verify_csrf_token($csrf) && is_valid_uuid($id)) {
+    if (SecurityHelper::verifyCsrf($csrf) && is_valid_uuid($id)) {
         $stmt = $pdo->prepare("DELETE FROM peralatan WHERE id_peralatan = :id");
         $stmt->execute(['id' => $id]);
 
@@ -180,9 +166,6 @@ if (isset($_GET['edit']) && is_valid_uuid($_GET['edit'])) {
     $edit = $stmt->fetch();
 }
 
-/* ========================================================
-   LIST SEMUA PERALATAN
-======================================================== */
 $stmtList = $pdo->query("SELECT * FROM peralatan ORDER BY nama_peralatan ASC");
 $listPeralatan = $stmtList->fetchAll();
 ?>
@@ -190,158 +173,192 @@ $listPeralatan = $stmtList->fetchAll();
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Peralatan</title>
-    <link rel="stylesheet" href="../../assets/css/admin.css">
+    <title>Manajemen Peralatan - Admin Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <div class="logo">🧺 Tulip.projectt</div>
-    <div class="logo">Admin | Penyewaan Peralatan Piknik</div>
-    <a href="../../auth/logout.php" class="btn-sm logout">Logout</a>
-</div>
-
-<div class="wrapper">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <a href="../dashboard.php">🏠 Dashboard</a>
-        <a href="index.php" class="active">🧺 Peralatan</a>
-        <a href="../transaksi/index.php">💳 Transaksi</a>
-        <a href="../users/index.php">👤 Users</a>
+<header class="site-header">
+    <div class="nav-container">
+        <div class="brand-logo">
+            <span class="basket-icon">🧺</span>
+            <span>Tulip.projectt</span>
+            <span class="brand-badge">Admin Panel</span>
+        </div>
+        <div class="nav-actions">
+            <span class="user-dropdown-btn">🛡️ <?= SecurityHelper::e($_SESSION['nama'] ?? 'Admin') ?></span>
+            <a href="<?= app_path('auth/logout.php') ?>" class="btn btn-outline-danger btn-sm">Logout</a>
+        </div>
     </div>
+</header>
+
+<div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-title">Menu Utama</div>
+        <a href="../dashboard.php" class="sidebar-nav-item">
+            <span>🏠</span> Dashboard
+        </a>
+        <a href="index.php" class="sidebar-nav-item active">
+            <span>🧺</span> Peralatan
+        </a>
+        <a href="../transaksi/index.php" class="sidebar-nav-item">
+            <span>💳</span> Transaksi
+        </a>
+        <a href="../users/index.php" class="sidebar-nav-item">
+            <span>👤</span> Data Users
+        </a>
+        <div class="sidebar-title">Keamanan & Audit</div>
+        <a href="../audit_logs.php" class="sidebar-nav-item">
+            <span>🛡️</span> Security Audit Logs
+        </a>
+    </aside>
 
     <!-- CONTENT -->
-    <div class="content">
+    <main class="dashboard-main">
+        <div class="page-header">
+            <h1 class="page-title">🧺 Manajemen Peralatan & Paket Piknik</h1>
+            <p class="page-subtitle">Tambah peralatan baru, perbarui tarif sewa, stok, atau ubah status ketersediaan.</p>
+        </div>
 
         <?php if ($error): ?>
-            <div style="background:#fee; color:#c00; padding:10px 15px; border-radius:6px; margin-bottom:15px;">
-                <?= e($error) ?>
+            <div class="alert alert-danger mb-3">
+                <span>⚠️</span>
+                <div><?= SecurityHelper::e($error) ?></div>
             </div>
         <?php endif; ?>
 
-        <!-- FORM -->
-        <div class="card">
-            <h3><?= $edit ? 'Edit Peralatan' : 'Tambah Peralatan' ?></h3>
+        <!-- FORM TAMBAH / EDIT -->
+        <div class="checkout-card mb-4">
+            <h2 class="checkout-card-title">
+                <span>📝</span> <?= $edit ? 'Edit Paket Peralatan' : 'Tambah Paket Peralatan Baru' ?>
+            </h2>
 
-            <form method="POST" enctype="multipart/form-data" class="form-grid" id="formPeralatan">
-                <?= csrf_field() ?>
+            <form method="POST" enctype="multipart/form-data" id="formPeralatan">
+                <?= SecurityHelper::csrfField() ?>
                 <input type="hidden" name="aksi" value="<?= $edit ? 'update' : 'tambah' ?>">
 
                 <?php if ($edit): ?>
-                    <input type="hidden" name="id_peralatan" value="<?= e($edit['id_peralatan']) ?>">
+                    <input type="hidden" name="id_peralatan" value="<?= SecurityHelper::e($edit['id_peralatan']) ?>">
                 <?php endif; ?>
 
-                <input type="text"
-                       name="nama_peralatan"
-                       placeholder="Nama Peralatan"
-                       value="<?= e($edit['nama_peralatan'] ?? '') ?>"
-                       required>
+                <div class="filter-row mb-3">
+                    <div class="form-group flex-1">
+                        <label class="form-label">Nama Peralatan / Paket</label>
+                        <input type="text" name="nama_peralatan" class="form-control"
+                               value="<?= SecurityHelper::e($edit['nama_peralatan'] ?? '') ?>" required>
+                    </div>
 
-                <textarea name="deskripsi"
-                          placeholder="Deskripsi"
-                          required><?= e($edit['deskripsi'] ?? '') ?></textarea>
+                    <div class="form-group flex-1">
+                        <label class="form-label">Tarif Sewa / Hari (Rp)</label>
+                        <input type="number" name="harga_sewa" class="form-control"
+                               value="<?= SecurityHelper::e((string)($edit['harga_sewa'] ?? '')) ?>" min="0" required>
+                    </div>
 
-                <div>
-                    <label style="display:block; margin-bottom:4px; font-size:13px; color:#666;">Pilih Gambar (JPG/PNG/WEBP, Max 5MB):</label>
-                    <input type="file" name="gambar" accept="image/jpeg,image/png,image/webp">
+                    <div class="form-group" style="min-width: 140px;">
+                        <label class="form-label">Jumlah Stok</label>
+                        <input type="number" name="stok" class="form-control"
+                               value="<?= SecurityHelper::e((string)($edit['stok'] ?? '')) ?>" min="0" required>
+                    </div>
                 </div>
 
-                <?php if (!empty($edit['gambar'])): ?>
-                    <img src="../../uploads/peralatan/<?= e($edit['gambar']) ?>"
-                         width="120"
-                         style="margin-top:10px; border-radius:8px;">
-                <?php endif; ?>
+                <div class="form-group mb-3">
+                    <label class="form-label">Deskripsi Lengkap & Komponen Set</label>
+                    <textarea name="deskripsi" class="form-control" rows="3" required><?= SecurityHelper::e($edit['deskripsi'] ?? '') ?></textarea>
+                </div>
 
-                <input type="number"
-                       name="harga_sewa"
-                       placeholder="Harga Sewa"
-                       value="<?= e((string)($edit['harga_sewa'] ?? '')) ?>"
-                       min="0"
-                       required>
+                <div class="form-group mb-3">
+                    <label class="form-label">Foto Produk (JPG/PNG/WEBP, Max 5MB)</label>
+                    <input type="file" name="gambar" class="form-control" accept="image/jpeg,image/png,image/webp">
+                    <?php if (!empty($edit['gambar'])): ?>
+                        <div class="d-flex align-center gap-2 mt-2">
+                            <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($edit['gambar'])) ?>" 
+                                 class="img-product-table" alt="Foto Saat Ini">
+                            <span class="text-xs text-muted">Gambar saat ini: <?= SecurityHelper::e($edit['gambar']) ?></span>
+                        </div>
+                    <?php endif; ?>
+                </div>
 
-                <input type="number"
-                       name="stok"
-                       placeholder="Stok"
-                       value="<?= e((string)($edit['stok'] ?? '')) ?>"
-                       min="0"
-                       required>
-
-                <button type="submit" class="btn"><?= $edit ? 'Update' : 'Simpan' ?></button>
-                <button type="button" class="btn-sm" onclick="resetForm()">Batal</button>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <?= $edit ? 'Simpan Perubahan' : 'Tambah Peralatan' ?>
+                    </button>
+                    <button type="button" id="btnResetPeralatan" class="btn btn-outline">
+                        Batal
+                    </button>
+                </div>
             </form>
         </div>
 
-        <!-- TABEL -->
-        <div class="card">
-            <h3>Daftar Peralatan</h3>
+        <!-- TABEL LIST PERALATAN -->
+        <div class="checkout-card">
+            <h2 class="checkout-card-title">
+                <span>🧺</span> Daftar Inventaris Peralatan
+            </h2>
 
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Gambar</th>
-                        <th>Nama</th>
-                        <th>Deskripsi</th>
-                        <th>Harga</th>
-                        <th>Stok</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php $no = 1; foreach ($listPeralatan as $row): ?>
-                    <tr>
-                        <td><?= $no++ ?></td>
-                        <td>
-                            <?php if ($row['gambar']): ?>
-                                <img src="../../uploads/peralatan/<?= e($row['gambar']) ?>" width="60" style="border-radius:4px;">
-                            <?php endif; ?>
-                        </td>
-                        <td><?= e($row['nama_peralatan']) ?></td>
-                        <td><?= nl2br(e($row['deskripsi'])) ?></td>
-                        <td>Rp <?= number_format($row['harga_sewa'], 0, ',', '.') ?></td>
-                        <td><?= e((string)$row['stok']) ?></td>
-                        <td>
-                            <a href="?toggle_status=<?= urlencode($row['id_peralatan']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>"
-                               onclick="return confirm('Ubah status peralatan?')"
-                               style="text-decoration:none">
-                                <?php if ($row['status'] === 'tersedia'): ?>
-                                    <span class="badge success">Tersedia</span>
-                                <?php else: ?>
-                                    <span class="badge danger">Tidak tersedia</span>
+            <div class="table-responsive">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Gambar</th>
+                            <th>Nama Peralatan</th>
+                            <th>Deskripsi</th>
+                            <th>Harga Sewa</th>
+                            <th>Stok</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $no = 1; 
+                        foreach ($listPeralatan as $row): 
+                            $isAvail = ($row['status'] === 'tersedia');
+                        ?>
+                        <tr>
+                            <td class="text-muted"><?= $no++ ?></td>
+                            <td>
+                                <?php if ($row['gambar']): ?>
+                                    <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($row['gambar'])) ?>" 
+                                         class="img-product-table" alt="<?= SecurityHelper::e($row['nama_peralatan']) ?>">
                                 <?php endif; ?>
-                            </a>
-                        </td>
-                        <td>
-                            <a href="?edit=<?= urlencode($row['id_peralatan']) ?>" class="btn-sm edit">Edit</a>
-                            <a href="?hapus=<?= urlencode($row['id_peralatan']) ?>&csrf=<?= urlencode(get_csrf_token()) ?>"
-                               class="btn-sm delete"
-                               onclick="return confirm('Hapus peralatan ini?')">Hapus</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+                            </td>
+                            <td><strong><?= SecurityHelper::e($row['nama_peralatan']) ?></strong></td>
+                            <td class="cell-details"><?= nl2br(SecurityHelper::e($row['deskripsi'])) ?></td>
+                            <td class="text-bold text-primary"><?= SecurityHelper::rupiah($row['harga_sewa']) ?></td>
+                            <td class="text-bold"><?= (int)$row['stok'] ?> unit</td>
+                            <td>
+                                <a href="?toggle_status=<?= urlencode($row['id_peralatan']) ?>&csrf=<?= urlencode(SecurityHelper::csrfToken()) ?>"
+                                   data-confirm="Ubah status ketersediaan peralatan ini?">
+                                    <?php if ($isAvail): ?>
+                                        <span class="badge badge-success">Tersedia</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-danger">Tidak Tersedia</span>
+                                    <?php endif; ?>
+                                </a>
+                            </td>
+                            <td class="cell-nowrap">
+                                <a href="?edit=<?= urlencode($row['id_peralatan']) ?>" class="btn btn-sm btn-outline">Edit</a>
+                                <a href="?hapus=<?= urlencode($row['id_peralatan']) ?>&csrf=<?= urlencode(SecurityHelper::csrfToken()) ?>"
+                                   class="btn btn-sm btn-outline-danger"
+                                   data-confirm="Hapus peralatan ini dari database?">Hapus</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-    </div>
+    </main>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-    © <?= date('Y') ?> Admin | Penyewaan Peralatan Piknik
-</div>
+<footer class="site-footer">
+    © <?= date('Y') ?> Tulip.projectt | Sistem Informasi Penyewaan Peralatan Piknik
+</footer>
 
-<script>
-function resetForm() {
-    const form = document.getElementById('formPeralatan');
-    form.reset();
-    if (window.location.search.includes('edit=')) {
-        window.location.href = 'index.php';
-    }
-}
-</script>
-
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>

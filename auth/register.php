@@ -5,7 +5,7 @@ init_secure_session();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_csrf();
+    SecurityHelper::requireCsrf();
 
     $nama     = trim($_POST['nama'] ?? '');
     $email    = strtolower(trim($_POST['email'] ?? ''));
@@ -70,54 +70,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Registrasi Pelanggan</title>
-    <link rel="stylesheet" href="../assets/css/auth.css">
+    <title>Registrasi Pelanggan - Tulip.projectt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
 <body>
 
-<div class="auth-container">
-    <h2>Registrasi Pelanggan
-        <br>🧺 Tulip.projectt
-    </h2>
-
-    <?php if ($error): ?>
-        <p style="color:red; text-align:center;"><?= e($error) ?></p>
-    <?php endif; ?>
-
-    <form method="POST">
-        <?= csrf_field() ?>
-        <div class="form-group">
-            <label>Nama Lengkap</label>
-            <input type="text" name="nama" value="<?= e($_POST['nama'] ?? '') ?>" required autofocus>
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-brand">
+                <span>🧺</span> Tulip.projectt
+            </div>
+            <h1 class="auth-title">Buat Akun Pelanggan</h1>
+            <p class="auth-subtitle">Daftar sekarang untuk mulai menyewa set piknik estetik impianmu.</p>
         </div>
 
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required>
+        <?php if ($error): ?>
+            <div class="alert alert-danger">
+                <span>⚠️</span>
+                <div><?= SecurityHelper::e($error) ?></div>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST">
+            <?= SecurityHelper::csrfField() ?>
+
+            <div class="form-group">
+                <label class="form-label" for="regNama">Nama Lengkap</label>
+                <input type="text" id="regNama" name="nama" class="form-control" 
+                       value="<?= SecurityHelper::e($_POST['nama'] ?? '') ?>" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regEmail">Alamat Email</label>
+                <input type="email" id="regEmail" name="email" class="form-control" 
+                       value="<?= SecurityHelper::e($_POST['email'] ?? '') ?>" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regPassword">Password Keamanan</label>
+                <div class="password-field-wrapper">
+                    <input type="password" id="regPassword" name="password" class="form-control" required autocomplete="new-password">
+                    <button type="button" class="btn-toggle-password" data-target="regPassword" aria-label="Lihat Password">
+                        👁️‍🗨️
+                    </button>
+                </div>
+
+                <!-- PASSWORD STRENGTH INDICATOR BAR -->
+                <div class="password-meter-container">
+                    <div class="password-meter-track">
+                        <div class="password-meter-bar" id="passwordMeterBar"></div>
+                    </div>
+                    <div class="password-meter-text">
+                        <span id="passwordMeterText">Kekuatan password</span>
+                        <span>Standar OWASP</span>
+                    </div>
+                </div>
+
+                <!-- CRITERIA CHECKLIST GUIDE -->
+                <ul class="criteria-list">
+                    <li class="criteria-item" id="crit-length"><span class="criteria-icon">○</span> Minimal 8 karakter</li>
+                    <li class="criteria-item" id="crit-upper"><span class="criteria-icon">○</span> Minimal 1 huruf besar (A-Z)</li>
+                    <li class="criteria-item" id="crit-lower"><span class="criteria-icon">○</span> Minimal 1 huruf kecil (a-z)</li>
+                    <li class="criteria-item" id="crit-number"><span class="criteria-icon">○</span> Minimal 1 angka (0-9)</li>
+                    <li class="criteria-item" id="crit-symbol"><span class="criteria-icon">○</span> Minimal 1 simbol khusus (@#$%^&*!?)</li>
+                </ul>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regPhone">Nomor WhatsApp / HP</label>
+                <input type="tel" id="regPhone" name="no_hp" class="form-control" 
+                       value="<?= SecurityHelper::e($_POST['no_hp'] ?? '') ?>" placeholder="08xxxxxxxxxx">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regAlamat">Alamat Lengkap</label>
+                <textarea id="regAlamat" name="alamat" class="form-control" rows="2" 
+                          placeholder="Alamat domisili atau pengiriman..."><?= SecurityHelper::e($_POST['alamat'] ?? '') ?></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full btn-lg mt-3">
+                Daftar Akun Baru
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Sudah memiliki akun? <a href="login_pelanggan.php" class="text-bold">Masuk di sini</a>
+            <div class="mt-2">
+                <a href="<?= app_path('pelanggan/dashboard.php') ?>" class="text-sm text-muted">← Kembali ke Beranda</a>
+            </div>
         </div>
-
-        <div class="form-group">
-            <label>Password (Min. 6 Karakter)</label>
-            <input type="password" name="password" minlength="6" required>
-        </div>
-
-        <div class="form-group">
-            <label>No HP</label>
-            <input type="text" name="no_hp" value="<?= e($_POST['no_hp'] ?? '') ?>">
-        </div>
-
-        <div class="form-group">
-            <label>Alamat</label>
-            <input type="text" name="alamat" value="<?= e($_POST['alamat'] ?? '') ?>">
-        </div>
-
-        <button class="btn" type="submit">Daftar</button>
-    </form>
-
-    <div class="auth-footer">
-        <a href="login_pelanggan.php">Sudah punya akun? Login</a>
     </div>
 </div>
 
+<script src="<?= app_path('public/assets/js/app.js') ?>"></script>
 </body>
 </html>
