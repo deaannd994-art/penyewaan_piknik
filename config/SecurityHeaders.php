@@ -32,14 +32,14 @@ class SecurityHeaders {
         // 2. MIME Sniffing Prevention
         header("X-Content-Type-Options: nosniff");
 
-        // 3. Strict-Transport-Security (HSTS: 180 days default Helmet standard)
-        header("Strict-Transport-Security: max-age=15552000; includeSubDomains; preload");
+        // 3. Strict-Transport-Security (HSTS: 2 years + preload standard for A+ SecurityHeaders rating)
+        header("Strict-Transport-Security: max-age=63072000; includeSubDomains; preload");
 
         // 4. Referrer Policy
         header("Referrer-Policy: strict-origin-when-cross-origin");
 
         // 5. Permissions Policy (Restriksi sensor, kamera, mikrofon)
-        header("Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()");
+        header("Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()");
 
         // 6. Cross-Origin Policies (COOP & CORP)
         header("Cross-Origin-Opener-Policy: same-origin");
@@ -62,12 +62,13 @@ class SecurityHeaders {
                  || (!empty($_SERVER['VERCEL']) || !empty($_ENV['VERCEL']) || getenv('VERCEL') !== false);
 
         $csp = "default-src 'self'; "
-             . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-             . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-             . "font-src 'self' https://fonts.gstatic.com data:; "
-             . "img-src 'self' data: https: blob:; "
+             . "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; "
+             . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+             . "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; "
+             . "img-src 'self' data: blob: https://www.gstatic.com https:; "
              . "frame-src 'self' https://www.google.com https://maps.google.com; "
              . "connect-src 'self'; "
+             . "frame-ancestors 'none'; "
              . "base-uri 'self'; "
              . "form-action 'self';"
              . ($isHttps ? " upgrade-insecure-requests;" : "");

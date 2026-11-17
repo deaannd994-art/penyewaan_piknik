@@ -42,13 +42,13 @@ CREATE TABLE `users` (
 -- Data Seed Tabel `users`
 -- --------------------------------------------------------
 INSERT INTO `users` (`id_user`, `nama`, `email`, `password`, `role`, `no_hp`, `alamat`, `created_at`) VALUES
-('a54ff647-80f1-4682-9454-de2f4e94e79e', 'Admin', 'admin@piknik.com', '$2y$10$f1Ear39geH4P.KS4A5o6mOS9kJK7UiqglgAuH.x206vsxsg6xHBz.', 'admin', '081234567890', 'Kantor Pusat Tulip Project', NOW()),
-('431b21ae-fadd-4b50-a2d7-5694b5797eb7', 'Owner', 'owner@piknik.com', '$2y$10$uJ7CicSaiiycnqxDoydfDuY8X6fZ68ayikjkFDhulm7aCPok2kvPe', 'owner', '081234567891', 'Kantor Owner Tulip Project', NOW()),
-('312424f6-3469-4e01-98da-79fae4f22baa', 'Dea Ananda', 'dea@gmail.com', '$2y$10$eHzrYSjPrINs2peM6c3g3.ju/5nlkiXSAvqdxohnRbljKjh4CLOT2', 'pelanggan', '083123456789', 'Cirebon', NOW()),
-('523c0e22-afb4-4ea3-9f77-211e4ca942a5', 'Dea', 'deanda@gmail.com', '$2y$10$eHzrYSjPrINs2peM6c3g3.ju/5nlkiXSAvqdxohnRbljKjh4CLOT2', 'pelanggan', '083234567891', 'Kuningan', NOW()),
-('7901b5a9-c149-4e96-82f0-f89d413ac467', 'El Putra', 'elputra@gmail.com', '$2y$10$eHzrYSjPrINs2peM6c3g3.ju/5nlkiXSAvqdxohnRbljKjh4CLOT2', 'pelanggan', '083812345678', 'Makasar', NOW()),
-('86f43217-91bb-4998-9dc7-81852d750f26', 'Maulana Siddiq', 'siddiq@gmail.com', '$2y$10$eHzrYSjPrINs2peM6c3g3.ju/5nlkiXSAvqdxohnRbljKjh4CLOT2', 'pelanggan', '089712345678', 'Kadugede Kuningan', NOW()),
-('39d76de2-eb5d-4dc5-9216-33d818ac7a82', 'Khaerunnisa', 'nisa@gmail.com', '$2y$10$eHzrYSjPrINs2peM6c3g3.ju/5nlkiXSAvqdxohnRbljKjh4CLOT2', 'pelanggan', '085612345678', 'Majalengka', NOW());
+('a54ff647-80f1-4682-9454-de2f4e94e79e', 'Admin', 'admin@piknik.com', '$argon2id$v=19$m=65536,t=4,p=1$YmZFVU1LOHNEWFN2QlROYQ$8RXBLYmeti/aOktC9341oLSJlck6ldo4S0acEWc4jcg', 'admin', '081234567890', 'Kantor Pusat Tulip Project', NOW()),
+('431b21ae-fadd-4b50-a2d7-5694b5797eb7', 'Owner', 'owner@piknik.com', '$argon2id$v=19$m=65536,t=4,p=1$Z1poS1dSVDBpR1piaHRhVg$noBuZoLN6h7DT5ZxMXYo0LKxXS8k0qyuVO8Ogyn12NM', 'owner', '081234567891', 'Kantor Owner Tulip Project', NOW()),
+('312424f6-3469-4e01-98da-79fae4f22baa', 'Dea Ananda', 'dea@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$QlJhNmQ1NjU5VVguVmpDaA$GEepSNql2oWfAUC4QOvi7N5qh2/KHyzUrMS6TjOasPs', 'pelanggan', '083123456789', 'Cirebon', NOW()),
+('523c0e22-afb4-4ea3-9f77-211e4ca942a5', 'Dea', 'deanda@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$dWhJMlR4SjdVMTlUdkZGbA$pZKg+SAmHtxWeDykudwH38leNVULhCdYiNacMxF7B+I', 'pelanggan', '083234567891', 'Kuningan', NOW()),
+('7901b5a9-c149-4e96-82f0-f89d413ac467', 'El Putra', 'elputra@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$SGpONi8vekhVYldzeTJVSw$/bwkJk9yI941v0G3k6UoyPwSaW4Qv7Qc7K7fTDOC2y0', 'pelanggan', '083812345678', 'Makasar', NOW()),
+('86f43217-91bb-4998-9dc7-81852d750f26', 'Maulana Siddiq', 'siddiq@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$TzhnUWEvVi9zelNxNExTLw$US1gpzL8lo5j5g7JU1JXNLATDnvDdzGlyeIfWATftCg', 'pelanggan', '089712345678', 'Kadugede Kuningan', NOW()),
+('39d76de2-eb5d-4dc5-9216-33d818ac7a82', 'Khaerunnisa', 'nisa@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$dlJXNUY3MDRlQk03NGZPVg$pOzof9TbJDbZnXqYpB5C9LcdyDTmcAaE4ZLfSoHQpd8', 'pelanggan', '085612345678', 'Majalengka', NOW());
 
 -- --------------------------------------------------------
 -- 2. Tabel `peralatan` (Primary Key: UUID v4 CHAR(36))
