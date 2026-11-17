@@ -43,42 +43,54 @@ if (!function_exists('load_env')) {
 
 if (!function_exists('env')) {
     function env(string $key, $default = null) {
-        $val = getenv($key);
-        if ($val === false) {
-            $val = $_ENV[$key] ?? $_SERVER[$key] ?? $default;
+        $val = $_ENV[$key] ?? $_SERVER[$key] ?? null;
+        if ($val === null || $val === false) {
+            $envVal = getenv($key);
+            if ($envVal !== false) {
+                $val = $envVal;
+            }
         }
 
-        if ($val === 'true' || $val === '(true)') {
-            return true;
+        if ($val === null || $val === false) {
+            return $default;
         }
-        if ($val === 'false' || $val === '(false)') {
-            return false;
-        }
-        if ($val === 'null' || $val === '(null)') {
-            return null;
-        }
-        if ($val === 'empty' || $val === '(empty)') {
-            return '';
+
+        if (is_string($val)) {
+            $lower = strtolower(trim($val));
+            if ($lower === 'true' || $lower === '(true)') {
+                return true;
+            }
+            if ($lower === 'false' || $lower === '(false)') {
+                return false;
+            }
+            if ($lower === 'null' || $lower === '(null)') {
+                return null;
+            }
+            if ($lower === 'empty' || $lower === '(empty)') {
+                return '';
+            }
         }
 
         return $val;
     }
 }
 
-// Inisialisasi pemuatan .env dari root proyek
+// Inisialisasi pemuatan .env dari root proyek jika file .env ada
 $rootPath = dirname(__DIR__);
-if (file_exists($rootPath . '/vendor/autoload.php')) {
-    require_once $rootPath . '/vendor/autoload.php';
-    if (class_exists(\Dotenv\Dotenv::class)) {
-        try {
-            $dotenv = \Dotenv\Dotenv::createImmutable($rootPath);
-            $dotenv->safeLoad();
-        } catch (\Throwable $th) {
+if (file_exists($rootPath . '/.env')) {
+    if (file_exists($rootPath . '/vendor/autoload.php')) {
+        require_once $rootPath . '/vendor/autoload.php';
+        if (class_exists(\Dotenv\Dotenv::class)) {
+            try {
+                $dotenv = \Dotenv\Dotenv::createImmutable($rootPath);
+                $dotenv->safeLoad();
+            } catch (\Throwable $th) {
+                load_env($rootPath . '/.env');
+            }
+        } else {
             load_env($rootPath . '/.env');
         }
     } else {
         load_env($rootPath . '/.env');
     }
-} else {
-    load_env($rootPath . '/.env');
 }
