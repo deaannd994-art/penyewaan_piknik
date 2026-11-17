@@ -1,8 +1,15 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
-init_secure_session();
+init_secure_session('pelanggan');
 
 $error = '';
+if (!empty($_SESSION['flash_warning'])) {
+    $error = $_SESSION['flash_warning'];
+    unset($_SESSION['flash_warning']);
+} elseif (!empty($_SESSION['flash_error'])) {
+    $error = $_SESSION['flash_error'];
+    unset($_SESSION['flash_error']);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     SecurityHelper::requireCsrf();

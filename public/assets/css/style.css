@@ -990,7 +990,12 @@ textarea.form-control {
     min-height: 80px;
 }
 
-/* Password Toggle Wrapper */
+/* Password Toggle Wrapper & Browser Native Reveal Reset */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+
 .password-field-wrapper {
     position: relative;
     display: flex;
@@ -998,7 +1003,7 @@ textarea.form-control {
 }
 
 .password-field-wrapper .form-control {
-    padding-right: 44px;
+    padding-right: 2.75rem;
 }
 
 .btn-toggle-password {

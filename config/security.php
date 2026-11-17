@@ -14,15 +14,57 @@ function apply_security_headers(): void {
 }
 apply_security_headers();
 
+/**
+ * Mendapatkan Nama Cookie Sesi Berdasarkan Area (OWASP A07: Multi-Tab Session Isolation)
+ * Admin & Owner: TULIP_ADMIN_SESS
+ * Pelanggan & Publik: TULIP_USER_SESS
+ */
+function get_session_name(?string $area = null): string {
+    if ($area === 'admin' || $area === 'owner') {
+        return 'TULIP_ADMIN_SESS';
+    }
+    if ($area === 'pelanggan' || $area === 'user') {
+        return 'TULIP_USER_SESS';
+    }
+
+    $uri     = $_SERVER['REQUEST_URI'] ?? '';
+    $script  = $_SERVER['SCRIPT_NAME'] ?? '';
+    $path    = str_replace('\\', '/', $script . ' ' . $uri);
+    $referer = str_replace('\\', '/', $_SERVER['HTTP_REFERER'] ?? '');
+
+    if (
+        str_contains($path, '/admin/') ||
+        str_contains($path, '/admin') ||
+        str_contains($path, '/owner/') ||
+        str_contains($path, '/owner') ||
+        str_contains($path, 'login_admin.php') ||
+        (str_contains($path, 'logout.php') && !str_contains($path, 'logout_pelanggan.php')) ||
+        (str_contains($path, 'captcha.php') && (
+            str_contains($referer, 'login_admin') ||
+            str_contains($referer, '/admin') ||
+            str_contains($referer, '/owner') ||
+            (isset($_GET['area']) && $_GET['area'] === 'admin')
+        ))
+    ) {
+        return 'TULIP_ADMIN_SESS';
+    }
+
+    return 'TULIP_USER_SESS';
+}
+
 // Konfigurasi Session Hardening (OWASP A07: Identification and Authentication Failures)
-function init_secure_session(): void {
+function init_secure_session(?string $area = null): void {
     $lifetime = (int) env('SESSION_LIFETIME', 3600);
     $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
              || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
              || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
              || (bool) env('APP_HTTPS', false);
 
+    $targetSessionName = get_session_name($area);
+
     if (session_status() === PHP_SESSION_NONE) {
+        session_name($targetSessionName);
+
         $cookieParams = [
             'lifetime' => $lifetime,
             'path'     => '/',
@@ -39,6 +81,10 @@ function init_secure_session(): void {
         ini_set('session.cookie_secure', $isSecure ? '1' : '0');
         ini_set('session.gc_maxlifetime', (string)$lifetime);
 
+        session_start();
+    } elseif (session_status() === PHP_SESSION_ACTIVE && session_name() !== $targetSessionName) {
+        session_write_close();
+        session_name($targetSessionName);
         session_start();
     }
 
@@ -354,40 +400,11 @@ function app_path(string $path = ''): string {
 
 // Role-Based Access Control (RBAC) Hardening (OWASP A01: Broken Access Control)
 function require_auth(array $allowed_roles = [], ?string $redirect_url = null): void {
-    init_secure_session();
-    global $pdo;
-
-    $redirect_url = $redirect_url ?? app_path('auth/login_pelanggan.php');
-
-    // Jika belum login, id_user kosong, atau role kosong (sesi terputus/kedaluwarsa), arahkan ke login
-    if (empty($_SESSION['login']) || empty($_SESSION['id_user']) || empty($_SESSION['role'])) {
-        header("Location: " . $redirect_url);
-        exit;
-    }
-
-    $currentRole = (string) $_SESSION['role'];
-
-    // Verifikasi otorisasi role
-    if (!empty($allowed_roles) && !in_array($currentRole, $allowed_roles, true)) {
-        if ($pdo instanceof PDO) {
-            log_audit(
-                $pdo,
-                $_SESSION['id_user'] ?? null,
-                'UNAUTHORIZED_ACCESS_ATTEMPT',
-                $_SERVER['SCRIPT_NAME'] ?? 'system',
-                'failed',
-                "Current role: {$currentRole}, Required: " . implode(',', $allowed_roles)
-            );
-        }
-        http_response_code(403);
-        die("403 Forbidden: Anda tidak memiliki hak akses (role) ke halaman ini.");
-    }
-
-    // Perbarui waktu aktivitas pengguna
-    $_SESSION['last_activity'] = time();
+    require_once dirname(__DIR__) . '/src/Middleware/AuthMiddleware.php';
+    \Tulip\Middleware\AuthMiddleware::check($allowed_roles, $redirect_url);
 }
 
 // Alias middleware requireRole untuk sintaks yang lebih ekspresif
-function requireRole(array $allowed_roles, string $redirect_url = '/penyewaan_piknik/auth/login_pelanggan.php'): void {
+function requireRole(array $allowed_roles, ?string $redirect_url = null): void {
     require_auth($allowed_roles, $redirect_url);
 }
