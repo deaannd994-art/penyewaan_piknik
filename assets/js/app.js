@@ -279,50 +279,91 @@ function initCatalogFilter() {
 }
 
 /* ==========================================================================
-   6. CART DYNAMIC TOTAL CALCULATION
+   6. CART DYNAMIC TOTAL CALCULATION & SELECT ALL
    ========================================================================== */
 function initCartCalculator() {
-    const checkboxes = document.querySelectorAll('.cart-checkbox');
-    const totalDisplay = document.getElementById('totalHargaKeranjang');
+    const itemCheckboxes = document.querySelectorAll('.cart-item input[name="id_keranjang[]"]');
     const selectAllCheckbox = document.getElementById('selectAllCart');
+    const totalDisplay = document.getElementById('totalHargaKeranjang');
+    const cartForm = selectAllCheckbox ? selectAllCheckbox.closest('form') : (itemCheckboxes.length ? itemCheckboxes[0].closest('form') : null);
+    const checkoutBtn = cartForm ? cartForm.querySelector('button[type="submit"]') : null;
 
-    if (!checkboxes.length || !totalDisplay) return;
+    if (!itemCheckboxes.length || !totalDisplay) return;
+
+    // Pastikan status awal tidak otomatis tercentang saat load maupun refresh
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    }
+    itemCheckboxes.forEach(cb => {
+        cb.checked = false;
+    });
 
     function hitungTotal() {
         let total = 0;
+        let enabledCount = 0;
         let checkedCount = 0;
 
-        checkboxes.forEach(cb => {
-            if (cb.checked && !cb.disabled) {
-                const harga = parseInt(cb.getAttribute('data-harga') || '0', 10);
-                const jumlah = parseInt(cb.getAttribute('data-jumlah') || '1', 10);
-                total += harga * jumlah;
-                checkedCount++;
+        itemCheckboxes.forEach(cb => {
+            if (!cb.disabled) {
+                enabledCount++;
+                if (cb.checked) {
+                    const harga = parseInt(cb.getAttribute('data-harga') || '0', 10);
+                    const jumlah = parseInt(cb.getAttribute('data-jumlah') || '1', 10);
+                    total += harga * jumlah;
+                    checkedCount++;
+                }
             }
         });
 
         totalDisplay.textContent = 'Rp ' + total.toLocaleString('id-ID');
 
         if (selectAllCheckbox) {
-            const enabledBoxes = Array.from(checkboxes).filter(cb => !cb.disabled);
-            selectAllCheckbox.checked = enabledBoxes.length > 0 && checkedCount === enabledBoxes.length;
+            selectAllCheckbox.checked = enabledCount > 0 && checkedCount === enabledCount;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < enabledCount;
+        }
+
+        if (checkoutBtn) {
+            if (checkedCount === 0) {
+                checkoutBtn.disabled = true;
+                checkoutBtn.classList.add('disabled');
+            } else {
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('disabled');
+            }
         }
     }
 
-    checkboxes.forEach(cb => {
+    // Event listener per item checkbox
+    itemCheckboxes.forEach(cb => {
         cb.addEventListener('change', hitungTotal);
     });
 
+    // Event listener Select All
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', () => {
             const isChecked = selectAllCheckbox.checked;
-            checkboxes.forEach(cb => {
-                if (!cb.disabled) cb.checked = isChecked;
+            itemCheckboxes.forEach(cb => {
+                if (!cb.disabled) {
+                    cb.checked = isChecked;
+                }
             });
             hitungTotal();
         });
     }
 
+    // Cegah submit jika tidak ada item yang dipilih
+    if (cartForm) {
+        cartForm.addEventListener('submit', (e) => {
+            const anyChecked = Array.from(itemCheckboxes).some(cb => cb.checked && !cb.disabled);
+            if (!anyChecked) {
+                e.preventDefault();
+                alert('Silakan pilih minimal satu peralatan untuk melanjutkan ke checkout.');
+            }
+        });
+    }
+
+    // Jalankan kalkulasi awal saat halaman dimuat
     hitungTotal();
 }
 

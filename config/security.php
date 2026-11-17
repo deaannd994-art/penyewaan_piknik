@@ -389,13 +389,30 @@ function clear_failed_logins(PDO $pdo, string $email): void {
 
 // Dynamic App Path Resolver (Kesiapan Cloud Deployment: Vercel, Railway, Render)
 function app_path(string $path = ''): string {
-    $baseUrl = env('APP_URL', '');
-    $prefix = '';
-    if (!empty($baseUrl)) {
-        $parsed = parse_url($baseUrl, PHP_URL_PATH);
-        $prefix = $parsed ? rtrim($parsed, '/') : '';
+    $isVercel = !empty($_SERVER['VERCEL']) 
+             || !empty($_ENV['VERCEL']) 
+             || getenv('VERCEL') !== false 
+             || str_contains($_SERVER['HTTP_HOST'] ?? '', 'vercel.app');
+
+    if ($isVercel) {
+        $prefix = '';
+    } else {
+        $baseUrl = env('APP_URL', '');
+        $prefix = '';
+        if (!empty($baseUrl)) {
+            $parsed = parse_url($baseUrl, PHP_URL_PATH);
+            $prefix = $parsed ? rtrim($parsed, '/') : '';
+        }
+        if ($prefix === '' && isset($_SERVER['REQUEST_URI']) && str_starts_with($_SERVER['REQUEST_URI'], '/penyewaan_piknik')) {
+            $prefix = '/penyewaan_piknik';
+        }
     }
-    return ($prefix !== '' ? $prefix : '') . '/' . ltrim($path, '/');
+
+    $cleanPath = ltrim($path, '/');
+    if ($cleanPath === '') {
+        return $prefix !== '' ? $prefix : '/';
+    }
+    return ($prefix !== '' ? $prefix : '') . '/' . $cleanPath;
 }
 
 // Role-Based Access Control (RBAC) Hardening (OWASP A01: Broken Access Control)
