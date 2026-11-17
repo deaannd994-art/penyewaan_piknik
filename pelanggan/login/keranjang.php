@@ -87,7 +87,7 @@ $items = $stmt->fetchAll();
                 </a>
             </div>
         <?php else: ?>
-            <form action="checkout.php" method="POST">
+            <form action="checkout.php" method="POST" autocomplete="off">
                 <?= SecurityHelper::csrfField() ?>
 
                 <div class="catalog-filter-card mb-3">
@@ -109,7 +109,7 @@ $items = $stmt->fetchAll();
                                data-harga="<?= (int)$row['harga_sewa'] ?>"
                                data-jumlah="<?= (int)$row['jumlah'] ?>"
                                class="cart-checkbox"
-                               <?= !$isAvailable ? 'disabled' : 'checked' ?>>
+                               <?= !$isAvailable ? 'disabled' : '' ?>>
 
                         <div class="cart-thumb">
                             <img src="<?= app_path('uploads/peralatan/' . SecurityHelper::e($row['gambar'])) ?>" 

@@ -290,6 +290,15 @@ function initCartCalculator() {
 
     if (!itemCheckboxes.length || !totalDisplay) return;
 
+    // Pastikan status awal tidak otomatis tercentang saat load maupun refresh
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    }
+    itemCheckboxes.forEach(cb => {
+        cb.checked = false;
+    });
+
     function hitungTotal() {
         let total = 0;
         let enabledCount = 0;
