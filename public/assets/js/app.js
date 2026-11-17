@@ -691,8 +691,9 @@ function initCaptchaRefresh() {
             const targetId = btn.getAttribute('data-target') || 'captchaImg';
             const img = document.getElementById(targetId);
             if (img) {
-                const currentSrc = img.src.split('?')[0];
-                img.src = currentSrc + '?t=' + new Date().getTime();
+                const url = new URL(img.src, window.location.origin);
+                url.searchParams.set('t', new Date().getTime().toString());
+                img.src = url.pathname + url.search;
             }
         });
     });

@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="form-label" for="captchaCode">Verifikasi Keamanan (Bukan Robot)</label>
                 <div class="captcha-box">
-                    <img src="<?= app_path('public/captcha.php') ?>" alt="Security CAPTCHA" id="captchaAdminImg" class="captcha-img">
+                    <img src="<?= app_path('captcha.php?area=admin') ?>" alt="Security CAPTCHA" id="captchaAdminImg" class="captcha-img">
                     <button type="button" class="btn btn-outline btn-sm btn-refresh-captcha" data-target="captchaAdminImg" title="Perbarui Kode">
                         🔄 Refresh
                     </button>

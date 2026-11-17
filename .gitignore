@@ -31,11 +31,9 @@ Desktop.ini
 *.sublime-workspace
 .project
 
-# User & System Uploads (Keep directories with .gitkeep)
+# User & System Uploads (Keep directories with .gitkeep; keep equipment seed images)
 uploads/bukti/*
 !uploads/bukti/.gitkeep
-uploads/peralatan/*
-!uploads/peralatan/.gitkeep
-public/uploads/*
-!public/uploads/.gitkeep
+public/uploads/bukti/*
+!public/uploads/bukti/.gitkeep
 !public/uploads/.htaccess
