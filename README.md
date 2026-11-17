@@ -7,7 +7,7 @@
 ## 🌐 1. Informasi Aplikasi, URL Publik & Potensi Skripsi
 
 ### Tautan Aplikasi & Repositori
-- **Live Deployment URL (HTTPS):** `[https://your-domain-demo.com]` *(Siap di-deploy ke Cloud PaaS seperti Railway / Render / VPS dengan HTTPS aktif)*
+- **Live Deployment URL (HTTPS):** `penyewaanpikniktulipproject.vercel.app`
 - **Git Repository URL:** `https://github.com/deaannd994-art/penyewaan_piknik`
 - **Localhost Development URL:** `http://localhost/penyewaan_piknik`
 
