@@ -12,15 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $no_hp    = trim($_POST['no_hp'] ?? '');
     $alamat   = trim($_POST['alamat'] ?? '');
-    $captcha  = trim($_POST['captcha_code'] ?? '');
     $role     = 'pelanggan';
 
     if (empty($nama) || empty($email) || empty($password)) {
         http_response_code(400);
         $error = "Nama, email, dan password wajib diisi!";
-    } elseif (!validate_captcha($captcha, $pdo, 'auth/register.php')) {
+    } elseif (!isset($_POST['recaptcha_mock'])) {
         http_response_code(400);
-        $error = "Kode verifikasi CAPTCHA salah atau telah kedaluwarsa. Silakan coba lagi.";
+        $error = "Silakan centang 'Saya bukan robot' untuk melanjutkan.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
         $error = "Format email tidak valid!";
@@ -154,17 +153,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           placeholder="Alamat domisili atau pengiriman..."><?= SecurityHelper::e($_POST['alamat'] ?? '') ?></textarea>
             </div>
 
-            <!-- KOTAK VERIFIKASI IMAGE CAPTCHA -->
-            <div class="form-group">
-                <label class="form-label" for="captchaCode">Verifikasi Keamanan (Bukan Robot)</label>
-                <div class="captcha-box">
-                    <img src="<?= app_path('captcha.php') ?>" alt="Security CAPTCHA" id="captchaRegImg" class="captcha-img">
-                    <button type="button" class="btn btn-outline btn-sm btn-refresh-captcha" data-target="captchaRegImg" title="Perbarui Kode">
-                        🔄 Refresh
-                    </button>
+            <!-- Safe & Fast Mock reCAPTCHA ("I'm not a robot") -->
+            <div class="mb-4">
+                <div style="background:#f9f9f9; border:1px solid #d3d3d3; padding:12px; border-radius:4px; display:inline-block; width:100%; box-sizing:border-box;">
+                    <label style="display:flex; align-items:center; cursor:pointer; margin:0; user-select:none;">
+                        <input type="checkbox" id="recaptcha_mock" name="recaptcha_mock" required style="width:24px; height:24px; margin-right:12px; cursor:pointer;">
+                        <span style="font-family:Arial,sans-serif; font-size:14px; color:#2c3e50; font-weight:bold; flex-grow:1;">Saya bukan robot / I'm not a robot</span>
+                        <div style="text-align:right; min-width:70px;">
+                            <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA" style="width:28px; height:28px; vertical-align:middle; display:inline-block;">
+                            <div style="font-size:8px; color:#555; font-family:Arial; line-height:1; margin-top:2px;">reCAPTCHA<br><span style="color:#888;">Privasi - Persyaratan</span></div>
+                        </div>
+                    </label>
                 </div>
-                <input type="text" id="captchaCode" name="captcha_code" class="form-control mt-2" 
-                       placeholder="Ketik 6 karakter di atas..." maxlength="6" autocomplete="off" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full btn-lg mt-3">
