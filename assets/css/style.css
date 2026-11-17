@@ -1707,6 +1707,16 @@ textarea.form-control {
         gap: 24px;
     }
 
+    .map-section {
+        padding: 20px 16px;
+        margin-top: 32px;
+    }
+
+    .map-embed-wrapper {
+        aspect-ratio: 4/3;
+        max-height: 280px;
+    }
+
     .hero-editorial {
         padding: 28px 20px;
     }

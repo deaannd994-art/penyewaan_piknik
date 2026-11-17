@@ -60,7 +60,7 @@ class SecurityHeaders {
              . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
              . "font-src 'self' https://fonts.gstatic.com data:; "
              . "img-src 'self' data: https: blob:; "
-             . "frame-src 'self' https://www.google.com; "
+             . "frame-src 'self' https://www.google.com https://maps.google.com; "
              . "connect-src 'self'; "
              . "base-uri 'self'; "
              . "form-action 'self';";
