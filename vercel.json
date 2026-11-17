@@ -6,24 +6,88 @@
   },
   "routes": [
     {
+      "src": "/penyewaan_piknik/public/assets/(.*\\.css)",
+      "headers": {
+        "Content-Type": "text/css; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/public/assets/$1"
+    },
+    {
+      "src": "/penyewaan_piknik/public/assets/(.*\\.js)",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/public/assets/$1"
+    },
+    {
       "src": "/penyewaan_piknik/public/assets/(.*)",
       "dest": "/public/assets/$1"
     },
     {
+      "src": "/penyewaan_piknik/assets/(.*\\.css)",
+      "headers": {
+        "Content-Type": "text/css; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/penyewaan_piknik/assets/(.*\\.js)",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/assets/$1"
+    },
+    {
       "src": "/penyewaan_piknik/assets/(.*)",
-      "dest": "/public/assets/$1"
+      "dest": "/assets/$1"
     },
     {
       "src": "/penyewaan_piknik/uploads/(.*)",
       "dest": "/uploads/$1"
     },
     {
+      "src": "/public/assets/(.*\\.css)",
+      "headers": {
+        "Content-Type": "text/css; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/public/assets/$1"
+    },
+    {
+      "src": "/public/assets/(.*\\.js)",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/public/assets/$1"
+    },
+    {
       "src": "/public/assets/(.*)",
       "dest": "/public/assets/$1"
     },
     {
+      "src": "/assets/(.*\\.css)",
+      "headers": {
+        "Content-Type": "text/css; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/assets/(.*\\.js)",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/assets/$1"
+    },
+    {
       "src": "/assets/(.*)",
-      "dest": "/public/assets/$1"
+      "dest": "/assets/$1"
     },
     {
       "src": "/uploads/(.*)",
@@ -34,8 +98,7 @@
       "dest": "/uploads/$1"
     },
     {
-      "src": "/(.*\\.(?:css|js|png|jpg|jpeg|webp|svg|ico|gif|woff|woff2|ttf|eot))$",
-      "dest": "/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/penyewaan_piknik/(.*)",

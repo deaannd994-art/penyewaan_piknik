@@ -392,7 +392,8 @@ function app_path(string $path = ''): string {
     $isVercel = !empty($_SERVER['VERCEL']) 
              || !empty($_ENV['VERCEL']) 
              || getenv('VERCEL') !== false 
-             || str_contains($_SERVER['HTTP_HOST'] ?? '', 'vercel.app');
+             || str_contains(strtolower($_SERVER['HTTP_HOST'] ?? ''), 'vercel.app')
+             || !empty($_SERVER['VERCEL_URL']);
 
     if ($isVercel) {
         $prefix = '';

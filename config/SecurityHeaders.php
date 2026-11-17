@@ -55,6 +55,12 @@ class SecurityHeaders {
         header("X-Download-Options: noopen");
 
         // 10. Content-Security-Policy (CSP)
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                 || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+                 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+                 || (isset($_SERVER['HTTP_HOST']) && str_contains(strtolower($_SERVER['HTTP_HOST']), 'vercel.app'))
+                 || (!empty($_SERVER['VERCEL']) || !empty($_ENV['VERCEL']) || getenv('VERCEL') !== false);
+
         $csp = "default-src 'self'; "
              . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
              . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
@@ -63,7 +69,8 @@ class SecurityHeaders {
              . "frame-src 'self' https://www.google.com https://maps.google.com; "
              . "connect-src 'self'; "
              . "base-uri 'self'; "
-             . "form-action 'self';";
+             . "form-action 'self';"
+             . ($isHttps ? " upgrade-insecure-requests;" : "");
         header("Content-Security-Policy: " . $csp);
     }
 
