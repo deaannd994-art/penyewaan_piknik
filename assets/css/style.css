@@ -362,6 +362,35 @@ img {
     color: #075E54;
 }
 
+/* Workshop Address Google Maps Link */
+.maps-address-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary-forest);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+}
+
+.maps-address-link:hover {
+    color: var(--primary-hover);
+    background-color: var(--primary-light);
+    text-decoration: underline;
+}
+
+.maps-link-icon {
+    font-size: 0.85rem;
+    color: var(--accent-terracotta);
+    transition: transform 0.2s ease;
+}
+
+.maps-address-link:hover .maps-link-icon {
+    transform: translate(2px, -2px);
+}
+
 /* Floating WhatsApp Button */
 .floating-whatsapp {
     position: fixed;

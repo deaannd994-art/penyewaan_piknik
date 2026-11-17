@@ -8,7 +8,7 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Kontak & Bantuan - Tulip.projectt</title>
+    <title>Kontak & Ketentuan Sewa - Tulip.projectt</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="<?= app_path('public/assets/css/style.css') ?>">
 </head>
@@ -29,8 +29,8 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
         <nav class="nav-menu">
             <a href="dashboard.php" class="nav-link">Home</a>
             <a href="peralatan.php" class="nav-link">Peralatan</a>
-            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
-            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="keranjang.php" class="nav-link">Keranjang</a>
+            <a href="riwayat.php" class="nav-link">Riwayat</a>
             <a href="kontak.php" class="nav-link active">Kontak</a>
 
             <div class="user-dropdown">
@@ -52,66 +52,13 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
 
 <main class="main-content">
     <div class="container">
-
-        <div class="page-header">
-            <h1 class="page-title">📞 Layanan Pelanggan & Bantuan</h1>
-            <p class="page-subtitle">Butuh bantuan seputar pesanan atau pertanyaan teknis? Kami siap melayani Anda.</p>
-        </div>
-
-        <div class="story-grid">
-            <div class="checkout-card">
-                <h2 class="checkout-card-title">
-                    <span>📜</span> Panduan Singkat Penyewaan
-                </h2>
-                <ul class="criteria-list">
-                    <li class="criteria-item is-valid"><span class="criteria-icon">✓</span> Pengambilan peralatan dapat diambil sendiri di workshop atau menggunakan jasa antar.</li>
-                    <li class="criteria-item is-valid"><span class="criteria-icon">✓</span> Seluruh peralatan telah dibersihkan secara higienis sebelum diserahkan.</li>
-                    <li class="criteria-item is-valid"><span class="criteria-icon">✓</span> Harap simpan bukti sewa untuk diperlihatkan saat pengembalian barang.</li>
-                </ul>
-            </div>
-
-            <div class="checkout-card">
-                <h2 class="checkout-card-title">
-                    <span>💬</span> Kontak Tulip.projectt
-                </h2>
-                <div class="detail-specs">
-                    <div class="detail-spec-item">
-                        <span>📱 WhatsApp Hotline</span>
-                        <strong>0857 1759 7300</strong>
-                    </div>
-                    <div class="detail-spec-item">
-                        <span>📧 Email Support</span>
-                        <strong>tulip.projectt@gmail.com</strong>
-                    </div>
-                    <div class="detail-spec-item">
-                        <span>📍 Alamat</span>
-                        <strong>Sindanglaut, Cirebon, Jawa Barat</strong>
-                    </div>
-                </div>
-
-                <?php 
-                $waGeneralMsg = "Halo Admin Piknik, saya ingin tanya-tanya mengenai informasi penyewaan peralatan piknik.";
-                $waUrl = whatsapp_url($waGeneralMsg);
-                ?>
-                <div class="mt-3">
-                    <a href="<?= SecurityHelper::e($waUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-full btn-lg">
-                        💬 Hubungi Admin via WhatsApp
-                    </a>
-                </div>
-            </div>
-        </div>
-
+        <?php require dirname(__DIR__, 2) . '/views/partials/contact_content.php'; ?>
     </div>
 </main>
 
 <footer class="site-footer">
     <div class="container">
         <p>© <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik</p>
-        <div class="mt-2">
-            <a href="<?= SecurityHelper::e($waUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-sm">
-                💬 Hubungi Admin via WhatsApp
-            </a>
-        </div>
     </div>
 </footer>
 
