@@ -126,6 +126,26 @@ class SecurityHelper {
     public static function validateCaptcha(?string $input, PDO $pdo, string $targetResource): bool {
         return validate_captcha($input, $pdo, $targetResource);
     }
+
+    public static function whatsappUrl(?string $message = null, ?string $phone = null): string {
+        return whatsapp_url($message, $phone);
+    }
+}
+
+/**
+ * Helper Generator URL WhatsApp Click-to-Chat Aman
+ */
+function whatsapp_url(?string $message = null, ?string $phone = null): string {
+    $phone = $phone ?: (string) ($_ENV['ADMIN_WHATSAPP'] ?? env('ADMIN_WHATSAPP', '6285717597300'));
+    $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+    if (str_starts_with($cleanPhone, '08')) {
+        $cleanPhone = '628' . substr($cleanPhone, 2);
+    }
+    $url = 'https://wa.me/' . $cleanPhone;
+    if (!empty($message)) {
+        $url .= '?text=' . rawurlencode(trim($message));
+    }
+    return $url;
 }
 
 /**

@@ -97,6 +97,14 @@ if (!$data) {
                 </div>
 
                 <div class="d-flex gap-2 mt-3">
+                    <?php 
+                    $waHargaFormatted = number_format((float)$data['harga_sewa'], 0, ',', '.');
+                    $waMessage = "Halo Admin Piknik, saya ingin tanya-tanya atau menyewa paket *" . $data['nama_peralatan'] . "* (Rp " . $waHargaFormatted . "/hari). Apakah masih tersedia untuk tanggal tertentu?";
+                    $waUrl = whatsapp_url($waMessage);
+                    ?>
+                    <a href="<?= SecurityHelper::e($waUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-lg btn-full" title="Tanya Sewa via WhatsApp">
+                        💬 Tanya Sewa via WhatsApp
+                    </a>
                     <a href="<?= app_path('auth/login_pelanggan.php') ?>" class="btn btn-primary btn-lg btn-full">
                         🧺 Login untuk Menyewa
                     </a>

@@ -77,7 +77,7 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
                 <div class="detail-specs">
                     <div class="detail-spec-item">
                         <span>📱 WhatsApp Hotline</span>
-                        <strong>0831 6789 4444</strong>
+                        <strong>0857 1759 7300</strong>
                     </div>
                     <div class="detail-spec-item">
                         <span>📧 Email Support</span>
@@ -89,9 +89,13 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
                     </div>
                 </div>
 
+                <?php 
+                $waGeneralMsg = "Halo Admin Piknik, saya ingin tanya-tanya mengenai informasi penyewaan peralatan piknik.";
+                $waUrl = whatsapp_url($waGeneralMsg);
+                ?>
                 <div class="mt-3">
-                    <a href="https://wa.me/6283167894444" target="_blank" rel="noopener noreferrer" class="btn btn-accent btn-full">
-                        💬 Hubungi WhatsApp Sekarang
+                    <a href="<?= SecurityHelper::e($waUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-full btn-lg">
+                        💬 Hubungi Admin via WhatsApp
                     </a>
                 </div>
             </div>
@@ -102,7 +106,12 @@ $nama = $_SESSION['nama'] ?? 'Pelanggan';
 
 <footer class="site-footer">
     <div class="container">
-        © <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik
+        <p>© <?= date('Y') ?> 🧺 <strong>Tulip.projectt</strong> | Sistem Informasi Penyewaan Peralatan Piknik</p>
+        <div class="mt-2">
+            <a href="<?= SecurityHelper::e($waUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-sm">
+                💬 Hubungi Admin via WhatsApp
+            </a>
+        </div>
     </div>
 </footer>
 
