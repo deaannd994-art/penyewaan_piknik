@@ -45,8 +45,8 @@ if (!$data) {
         <nav class="nav-menu">
             <a href="dashboard.php" class="nav-link">Home</a>
             <a href="peralatan.php" class="nav-link active">Peralatan</a>
-            <a href="keranjang.php" class="nav-link">🛒 Keranjang</a>
-            <a href="riwayat.php" class="nav-link">📜 Riwayat</a>
+            <a href="keranjang.php" class="nav-link">Keranjang</a>
+            <a href="riwayat.php" class="nav-link">Riwayat</a>
             <a href="kontak.php" class="nav-link">Kontak</a>
 
             <div class="user-dropdown">
