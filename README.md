@@ -8,6 +8,9 @@
 
 ### Tautan Aplikasi & Repositori
 - **Live Deployment URL (HTTPS):** `penyewaanpikniktulipproject.vercel.app`
+- URL Dashboard Pelanggan:https://penyewaanpikniktulipproject.vercel.app/pelanggan/dashboard.php
+- URL Login Pelanggan:https://penyewaanpikniktulipproject.vercel.app/auth/login_pelanggan.php
+- URL Portal Login Admin & Owner:https://penyewaanpikniktulipproject.vercel.app/auth/login_admin.php
 - **Git Repository URL:** `https://github.com/deaannd994-art/penyewaan_piknik`
 - **Localhost Development URL:** `http://localhost/penyewaan_piknik`
 
